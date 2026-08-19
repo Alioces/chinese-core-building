@@ -7,11 +7,23 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	// JEI Maven
+	maven {
+		name = "Jared's maven"
+		url = "https://maven.blamejared.com/"
+	}
+	maven {
+		name = "ModMaven"
+		url = "https://modmaven.dev"
+	}
+	// Axiom (Modrinth Maven)
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+		content {
+			includeGroup "maven.modrinth"
+		}
+	}
 }
 
 loom {
@@ -39,6 +51,16 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// --- Dev-only dependencies (not included in published mod) ---
+
+	// JEI: compile against API, load full jar at dev runtime
+	modCompileOnly("mezz.jei:jei-${project.minecraft_version}-common-api:${project.jei_version}")
+	modCompileOnly("mezz.jei:jei-${project.minecraft_version}-fabric-api:${project.jei_version}")
+	modLocalRuntime("mezz.jei:jei-${project.minecraft_version}-fabric:${project.jei_version}")
+
+	// Axiom: dev runtime only for world editing tools
+	modLocalRuntime(file("资源/Axiom-5.4.2-for-MC1.20.1.jar"))
 }
 
 processResources {
