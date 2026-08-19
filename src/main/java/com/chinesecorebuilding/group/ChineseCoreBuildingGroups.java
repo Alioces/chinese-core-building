@@ -8,8 +8,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 
-import static com.chinesecorebuilding.ChineseCoreBuildingMod.MOD_GROUP;
-import static com.chinesecorebuilding.ChineseCoreBuildingMod.id;
+import static com.chinesecorebuilding.ChineseCoreBuildingMod.*;
 
 /**
  * 创造模式物品组注册中心。
@@ -105,7 +104,7 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.do_not_enter.asItem());
                         entries.add(ChineseCoreBuildingBlocks.end_of_km_h.asItem());
                         entries.add(ChineseCoreBuildingBlocks.end_of_no_overtaking.asItem());
-                        entries.add(ChineseCoreBuildingBlocks.give_way_to_oncoming_vehi.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.give_way_to_oncoming_vehicles.asItem());
                         entries.add(ChineseCoreBuildingBlocks.height_limit.asItem());
                         entries.add(ChineseCoreBuildingBlocks.km_h_and_no_entry.asItem());
                         entries.add(ChineseCoreBuildingBlocks.motor_vehicles_only.asItem());
@@ -117,8 +116,8 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.no_parking.asItem());
                         entries.add(ChineseCoreBuildingBlocks.no_pedestrians.asItem());
                         entries.add(ChineseCoreBuildingBlocks.no_stoping.asItem());
-                        entries.add(ChineseCoreBuildingBlocks.no_straight_thru_or_left_tur.asItem());
-                        entries.add(ChineseCoreBuildingBlocks.no_straight_thru_or_right_tu.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.no_straight_thru_or_right_turn.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.no_straight_thru_or_left_turn.asItem());
                         entries.add(ChineseCoreBuildingBlocks.no_trailers_or_semi_teailers.asItem());
                         entries.add(ChineseCoreBuildingBlocks.no_trucks.asItem());
                         entries.add(ChineseCoreBuildingBlocks.no_turn_left.asItem());
@@ -145,5 +144,6 @@ public class ChineseCoreBuildingGroups {
      */
     public static void initialize() {
         // 无需额外逻辑，类加载时静态字段会自动初始化
+        LOGGER.info("ChineseCoreBuildingGroups initialized ROAD_GROUP is {} items", ROAD_GROUP.getDisplayStacks().size());
     }
 }

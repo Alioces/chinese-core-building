@@ -88,7 +88,7 @@ public class ChineseCoreBuildingBlocks {
     public static final Block do_not_enter = register("do_not_enter", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block end_of_km_h = register("end_of_km_h", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block end_of_no_overtaking = register("end_of_no_overtaking", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
-    public static final Block give_way_to_oncoming_vehi = register("give_way_to_oncoming_vehi", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    public static final Block give_way_to_oncoming_vehicles = register("give_way_to_oncoming_vehicles", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block height_limit = register("height_limit", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block km_h_and_no_entry = register("km_h_and_no_entry", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block motor_vehicles_only = register("motor_vehicles_only", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
@@ -100,8 +100,8 @@ public class ChineseCoreBuildingBlocks {
     public static final Block no_parking = register("no_parking", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block no_pedestrians = register("no_pedestrians", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block no_stoping = register("no_stoping", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
-    public static final Block no_straight_thru_or_left_tur = register("no_straight_thru_or_left_tur", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
-    public static final Block no_straight_thru_or_right_tu = register("no_straight_thru_or_right_tu", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    public static final Block no_straight_thru_or_left_turn = register("no_straight_thru_or_left_turn", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    public static final Block no_straight_thru_or_right_turn = register("no_straight_thru_or_right_turn", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block no_trailers_or_semi_teailers = register("no_trailers_or_semi_teailers", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block no_trucks = register("no_trucks", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     public static final Block no_turn_left = register("no_turn_left", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
