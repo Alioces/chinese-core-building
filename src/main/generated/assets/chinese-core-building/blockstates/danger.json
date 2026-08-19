@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "chinese-core-building:block/danger"
+      },
+      "when": {
+        "facing": "north"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/danger"
+      },
+      "when": {
+        "facing": "east"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/danger"
+      },
+      "when": {
+        "facing": "south"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/danger"
+      },
+      "when": {
+        "facing": "west"
+      }
+    }
+  ]
+}

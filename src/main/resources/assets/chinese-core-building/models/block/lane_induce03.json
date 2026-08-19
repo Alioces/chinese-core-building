@@ -1,0 +1,451 @@
+{
+  "format_version": "1.9.0",
+  "credit": "Made with Blockbench",
+  "texture_size": [
+    32,
+    32
+  ],
+  "textures": {
+    "missing": "chinese-core-building:block/lane_induce03",
+    "particle": "chinese-core-building:block/lane_induce03"
+  },
+  "elements": [
+    {
+      "name": "bone2",
+      "from": [
+        2.42677,
+        10.57028,
+        15
+      ],
+      "to": [
+        10.42677,
+        13.57028,
+        15.5
+      ],
+      "rotation": {
+        "angle": -45,
+        "axis": "z",
+        "origin": [
+          8.0052,
+          8.01967,
+          15.25
+        ]
+      },
+      "color": 0,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            8,
+            1.5,
+            12
+          ],
+          "rotation": 270,
+          "texture": "#missing"
+        },
+        "east": {
+          "uv": [
+            5.5,
+            12.5,
+            4,
+            12
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "south": {
+          "uv": [
+            1.5,
+            8,
+            3,
+            12
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "west": {
+          "uv": [
+            13.5,
+            5.5,
+            12,
+            6
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "up": {
+          "uv": [
+            12,
+            0,
+            12.5,
+            4
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "down": {
+          "uv": [
+            0,
+            12,
+            0.5,
+            16
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        }
+      }
+    },
+    {
+      "name": "bone2",
+      "from": [
+        2.42677,
+        5.57028,
+        15
+      ],
+      "to": [
+        5.42677,
+        10.57028,
+        15.5
+      ],
+      "rotation": {
+        "angle": -45,
+        "axis": "z",
+        "origin": [
+          8.0052,
+          8.01967,
+          15.25
+        ]
+      },
+      "color": 0,
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            8,
+            9.5,
+            9.5
+          ],
+          "rotation": 270,
+          "texture": "#missing"
+        },
+        "east": {
+          "uv": [
+            4,
+            12.5,
+            1.5,
+            12
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "south": {
+          "uv": [
+            7,
+            9.5,
+            9.5,
+            11
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "west": {
+          "uv": [
+            14.5,
+            4,
+            12,
+            4.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "up": {
+          "uv": [
+            12,
+            6,
+            12.5,
+            7.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "down": {
+          "uv": [
+            5.5,
+            12,
+            6,
+            13.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        }
+      }
+    },
+    {
+      "name": "bone2",
+      "from": [
+        8.08363,
+        4.91342,
+        15
+      ],
+      "to": [
+        16.08363,
+        7.91342,
+        15.5
+      ],
+      "rotation": {
+        "angle": -45,
+        "axis": "z",
+        "origin": [
+          8.0052,
+          8.01967,
+          15.25
+        ]
+      },
+      "color": 0,
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            8,
+            4.5,
+            12
+          ],
+          "rotation": 270,
+          "texture": "#missing"
+        },
+        "east": {
+          "uv": [
+            8.5,
+            12.5,
+            7,
+            12
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "south": {
+          "uv": [
+            4.5,
+            8,
+            6,
+            12
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "west": {
+          "uv": [
+            13.5,
+            7.5,
+            12,
+            8
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "up": {
+          "uv": [
+            1,
+            12,
+            1.5,
+            16
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            12,
+            1,
+            16
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        }
+      }
+    },
+    {
+      "name": "bone2",
+      "from": [
+        8.08363,
+        -0.08658,
+        15
+      ],
+      "to": [
+        11.08363,
+        4.91342,
+        15.5
+      ],
+      "rotation": {
+        "angle": -45,
+        "axis": "z",
+        "origin": [
+          8.0052,
+          8.01967,
+          15.25
+        ]
+      },
+      "color": 0,
+      "faces": {
+        "north": {
+          "uv": [
+            9.5,
+            8,
+            12,
+            9.5
+          ],
+          "rotation": 270,
+          "texture": "#missing"
+        },
+        "east": {
+          "uv": [
+            14.5,
+            5,
+            12,
+            4.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "south": {
+          "uv": [
+            9.5,
+            9.5,
+            12,
+            11
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "west": {
+          "uv": [
+            14.5,
+            5,
+            12,
+            5.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            12,
+            9,
+            13.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        },
+        "down": {
+          "uv": [
+            12,
+            8,
+            12.5,
+            9.5
+          ],
+          "rotation": 90,
+          "texture": "#missing"
+        }
+      }
+    },
+    {
+      "name": "bone2",
+      "from": [
+        2,
+        0,
+        15.1
+      ],
+      "to": [
+        14,
+        16,
+        16
+      ],
+      "rotation": {
+        "angle": 0,
+        "axis": "y",
+        "origin": [
+          8,
+          0,
+          8
+        ]
+      },
+      "color": 0,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6,
+            8
+          ],
+          "texture": "#missing"
+        },
+        "east": {
+          "uv": [
+            6,
+            8,
+            6.5,
+            16
+          ],
+          "texture": "#missing"
+        },
+        "south": {
+          "uv": [
+            6,
+            0,
+            12,
+            8
+          ],
+          "texture": "#missing"
+        },
+        "west": {
+          "uv": [
+            6.5,
+            8,
+            7,
+            16
+          ],
+          "texture": "#missing"
+        },
+        "up": {
+          "uv": [
+            13,
+            11.5,
+            7,
+            11
+          ],
+          "texture": "#missing"
+        },
+        "down": {
+          "uv": [
+            13,
+            11.5,
+            7,
+            12
+          ],
+          "texture": "#missing"
+        }
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "bone2",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "color": 0,
+      "children": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

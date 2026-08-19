@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "chinese-core-building:block/road_narrows_on_right"
+      },
+      "when": {
+        "facing": "north"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/road_narrows_on_right"
+      },
+      "when": {
+        "facing": "east"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/road_narrows_on_right"
+      },
+      "when": {
+        "facing": "south"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/road_narrows_on_right"
+      },
+      "when": {
+        "facing": "west"
+      }
+    }
+  ]
+}

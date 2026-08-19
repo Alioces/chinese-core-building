@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "chinese-core-building:block/crossbuck_symbol"
+      },
+      "when": {
+        "facing": "north"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/crossbuck_symbol"
+      },
+      "when": {
+        "facing": "east"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/crossbuck_symbol"
+      },
+      "when": {
+        "facing": "south"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/crossbuck_symbol"
+      },
+      "when": {
+        "facing": "west"
+      }
+    }
+  ]
+}

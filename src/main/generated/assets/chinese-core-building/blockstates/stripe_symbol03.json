@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "chinese-core-building:block/stripe_symbol03"
+      },
+      "when": {
+        "facing": "north"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/stripe_symbol03"
+      },
+      "when": {
+        "facing": "east"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/stripe_symbol03"
+      },
+      "when": {
+        "facing": "south"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/stripe_symbol03"
+      },
+      "when": {
+        "facing": "west"
+      }
+    }
+  ]
+}

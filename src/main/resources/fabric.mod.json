@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "chinese-core-building",
+	"version": "${version}",
+	"name": "chinese-core-building",
+	"description": "你家楼下的杂物",
+	"authors": [
+		"AlicoegT-雾都"
+	],
+	"contact": {
+		"homepage": "https://www.bilibili.com/video/BV1eZ1TBdEzi/?share_source=copy_web&vd_source=5031efa839631611a877011ed7b990c0",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/chinese-core-building/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+          "com.chinesecorebuilding.ChineseCoreBuildingMod"
+		],
+		"client": [
+			"com.chinesecorebuilding.client.ChineseCoreBuildingClient"
+		],
+		"fabric-datagen": [
+			"com.chinesecorebuilding.client.ChineseCoreBuildingDataGenerator"
+		]
+	},
+	"mixins": [
+		"chinese-core-building.mixins.json",
+		{
+			"config": "chinese-core-building.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
