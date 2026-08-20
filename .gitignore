@@ -24,6 +24,10 @@ bin/
 .classpath
 .project
 
+# trae
+
+.trae/
+
 # macos
 
 *.DS_Store

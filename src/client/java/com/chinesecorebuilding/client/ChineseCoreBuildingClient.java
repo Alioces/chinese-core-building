@@ -3,6 +3,7 @@ package com.chinesecorebuilding.client;
 import com.chinesecorebuilding.block.properties.Offset;
 import com.chinesecorebuilding.block.properties.Layered;
 import com.chinesecorebuilding.block.properties.Rotatable;
+import com.chinesecorebuilding.block.roadSigns.RoadSignsBlock;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry;
 import com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.RotationBakedModel;
