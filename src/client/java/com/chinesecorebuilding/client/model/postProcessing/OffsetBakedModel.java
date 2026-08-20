@@ -71,15 +71,16 @@ public class OffsetBakedModel extends ForwardingBakedModel {
     @Override
     public void emitBlockQuads(BlockRenderView blockView, BlockState state, BlockPos pos,
                                Supplier<Random> randomSupplier, RenderContext context) {
-        float dx = 0, dz = 0;
+        float dx = 0, dy = 0, dz = 0;
 
         if (state != null && blockView.getBlockState(pos).getBlock() instanceof Offset offsetable) {
             float[] offset = offsetable.getOffset(state);
             dx = offset[0];
-            dz = offset[1];
+            dy = offset[1];
+            dz = offset[2];
         }
 
-        final float fdx = dx, fdz = dz;
+        final float fdx = dx, fdy = dy, fdz = dz;
 
         // 推入顶点变换：对每个面片的 4 个顶点应用偏移
         context.pushTransform(quad -> {
@@ -87,8 +88,8 @@ public class OffsetBakedModel extends ForwardingBakedModel {
             for (int i = 0; i < 4; i++) {
                 // 读取当前顶点坐标，加上偏移量后写回
                 // quad.pos(index, x, y, z) 设置指定顶点的位置
-                // quad.x(i) / quad.z(i) 读取指定顶点的 X / Z 坐标
-                quad.pos(i, quad.x(i) + fdx, quad.y(i), quad.z(i) + fdz);
+                // quad.x(i) / quad.y(i) / quad.z(i) 读取指定顶点的 X / Y / Z 坐标
+                quad.pos(i, quad.x(i) + fdx, quad.y(i) + fdy, quad.z(i) + fdz);
             }
             // 返回 true 表示保留该面片（false 会丢弃）
             return true;

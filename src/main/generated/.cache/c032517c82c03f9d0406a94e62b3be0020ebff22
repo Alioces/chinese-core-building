@@ -1,10 +1,12 @@
-// 1.20.1	2026-08-19T21:37:58.0906205	chinese-core-building/Model Definitions
+// 1.20.1	2026-08-20T17:26:56.1796624	chinese-core-building/Model Definitions
 7641ca21b542fe25178c8c21e39ae22da49edc69 assets\chinese-core-building\blockstates\lane_induce02.json
 c709300b50cb54d8ac70359626254ea8ad4accb5 assets\chinese-core-building\models\item\no_u_turn.json
 83789185853cb7bba5089539f0d7755f13e16865 assets\chinese-core-building\blockstates\give_way_to_oncoming_vehicles.json
 7165122e408fdcea99c0c3b4739ceea6d8811fc4 assets\chinese-core-building\models\item\lane_induce02.json
 68c8da2d39e1e4540df8dccda950f1ee431e197b assets\chinese-core-building\blockstates\no_pedestrians.json
+8a329b52f6e4123470a57e5fdbb4c60902e88474 assets\chinese-core-building\models\item\obstacle_bypass_both_sides.json
 721ee8a0aa9ea77124e42d7ccc3abc019b9c157e assets\chinese-core-building\blockstates\no_turn_right.json
+ffa374eb82d0203de4c471b8efb5c5c599fcbbf5 assets\chinese-core-building\blockstates\obstacle_bypass_both_sides.json
 d760c86b19e3f60ee144752614ac7fb70c57a876 assets\chinese-core-building\models\item\stripe_symbol02.json
 23ce36f816af8a5f4d2ada969dbfb586240a09cf assets\chinese-core-building\blockstates\lane_induce01.json
 5263c3f033e75a033b2f96d6cb0c897a7b368787 assets\chinese-core-building\models\item\no_turn_right.json
@@ -13,8 +15,8 @@ e29060f17536bab1e9eef9d067f89c202f290bf4 assets\chinese-core-building\blockstate
 6840c0815eae78e14a31172e45d45a2751906ab8 assets\chinese-core-building\models\item\no_large_buses.json
 02a490362cea9931915766641d3a5fc79cd93a18 assets\chinese-core-building\models\item\no_parking.json
 0df4858635ed572ecfe5d1b38cd9c31062dcd8a7 assets\chinese-core-building\models\item\village.json
-258e6c43c383b914d7d745b931703fcf218e6829 assets\chinese-core-building\blockstates\speed_hump_ahead.json
 a8cd1c9e9467d58202fadbd808d58faf3a7f8a78 assets\chinese-core-building\blockstates\no_stoping.json
+258e6c43c383b914d7d745b931703fcf218e6829 assets\chinese-core-building\blockstates\speed_hump_ahead.json
 2b6344072bc9a0bc7cbc02e62c42b5786a013a4c assets\chinese-core-building\models\item\stripe_symbol03.json
 31ca067f63db3ad1c954fef6bfa0343b451423aa assets\chinese-core-building\blockstates\stripe_symbol01.json
 ea2295411f8212aa95fe63b9d6e44b3d428edfe7 assets\chinese-core-building\models\item\embankment_road02.json
@@ -38,8 +40,8 @@ a32b4c811d576505307abfefddaa7f14ea5152d9 assets\chinese-core-building\models\ite
 cd607bcf8b961d2ecdd451c0c74f2e0282ecc8b6 assets\chinese-core-building\blockstates\crossroads10.json
 b69bfff173ac35bc9690c608155fa3c0d9ea9258 assets\chinese-core-building\models\item\height_limit.json
 32fb13393d9fe2806daabf820044dbe9d8ba91e2 assets\chinese-core-building\models\item\no_trucks.json
-15bb94ca9a6bebbee56f4ca1da996c43dbfb3831 assets\chinese-core-building\blockstates\road_narrows_on_right.json
 f824eeab29974c833ab83e14e1df490f1e54faf4 assets\chinese-core-building\blockstates\crossbuck_symbol.json
+15bb94ca9a6bebbee56f4ca1da996c43dbfb3831 assets\chinese-core-building\blockstates\road_narrows_on_right.json
 d9c0cd64e0211eff2bc9e48a75575dbef278e75a assets\chinese-core-building\models\item\stop.json
 86959892b6c92a72c78473118c93903d17aaea86 assets\chinese-core-building\models\item\crossroads03.json
 b78dc95aa0a5f98d0ecb935ee185f88456a7b69f assets\chinese-core-building\blockstates\motor_vehicles_only.json
@@ -119,8 +121,8 @@ feb3043bbe28ffedac7c0cc7ed9a422fd3f6e5e0 assets\chinese-core-building\models\ite
 2b035a85dde5ad0f2086ce928a3150f3b7068f14 assets\chinese-core-building\models\item\traffic_accident_ahead.json
 378d138b8e76a33e53ad8df8db1744f6a91d9010 assets\chinese-core-building\models\item\weight_limit.json
 5ab304ea66f8a80825ccac9aa7905b828b7c9eb4 assets\chinese-core-building\models\item\reversible_ahead.json
-7fe6c6fdcc9e2464bcc314e3ab088094bad1827f assets\chinese-core-building\blockstates\watch_for_children02.json
 1cd5e7188b468917cc3f532f706e07f77e5b013d assets\chinese-core-building\blockstates\no_turn_left.json
+7fe6c6fdcc9e2464bcc314e3ab088094bad1827f assets\chinese-core-building\blockstates\watch_for_children02.json
 8db27c13b200709678ac67f54b8bc88cda20d849 assets\chinese-core-building\models\item\crossroads11.json
 9868fd0a0a64ddef47ceedf7429ddace20475f19 assets\chinese-core-building\models\item\keep_distance.json
 3a67e20a6cae7feae5370139478455800fe5700b assets\chinese-core-building\blockstates\crossroads02.json

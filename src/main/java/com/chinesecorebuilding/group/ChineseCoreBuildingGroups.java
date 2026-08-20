@@ -35,7 +35,7 @@ public class ChineseCoreBuildingGroups {
      */
     public static final ItemGroup ROAD_GROUP = Registry.register(
             Registries.ITEM_GROUP,
-            id("test_group"),  // 注册 ID：chinese-core-building:test_group
+            id("road_group"),  // 注册 ID：chinese-core-building:road_group
             FabricItemGroup.builder()
                     // 设置物品组图标（显示在标签页上的图标）
                     .icon(() -> new ItemStack(ChineseCoreBuildingBlocks.embankment_road01))
@@ -68,10 +68,9 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.lane_induce03.asItem());
                         entries.add(ChineseCoreBuildingBlocks.lane_induce04.asItem());
                         entries.add(ChineseCoreBuildingBlocks.lane_induce05.asItem());
-//                        entries.add(ChineseCoreBuildingBlocks.narrow_bridge_both_sides.asItem());
                         entries.add(ChineseCoreBuildingBlocks.obstacle_bypass_left.asItem());
                         entries.add(ChineseCoreBuildingBlocks.obstacle_bypass_right.asItem());
-//                        entries.add(ChineseCoreBuildingBlocks.obstacle_bypass.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.obstacle_bypass_both_sides.asItem());
                         entries.add(ChineseCoreBuildingBlocks.reversible_ahead.asItem());
                         entries.add(ChineseCoreBuildingBlocks.road_narrows_on_both_sides.asItem());
                         entries.add(ChineseCoreBuildingBlocks.road_narrows_on_left.asItem());
@@ -87,8 +86,6 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.traffic_lights_ahead.asItem());
                         entries.add(ChineseCoreBuildingBlocks.tunnel.asItem());
                         entries.add(ChineseCoreBuildingBlocks.two_way_traffic.asItem());
-//                        entries.add(ChineseCoreBuildingBlocks.unguarded_railway_crossing01.asItem());
-//                        entries.add(ChineseCoreBuildingBlocks.unguarded_railway_crossing02.asItem());
                         entries.add(ChineseCoreBuildingBlocks.videl_to_people_with_disabilities01.asItem());
                         entries.add(ChineseCoreBuildingBlocks.videl_to_people_with_disabilities02.asItem());
                         entries.add(ChineseCoreBuildingBlocks.village.asItem());
@@ -99,6 +96,7 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.watch_for_pedestrians01.asItem());
                         entries.add(ChineseCoreBuildingBlocks.watch_for_pedestrians02.asItem());
                         entries.add(ChineseCoreBuildingBlocks.watch_for_wild_animals.asItem());
+
                         // ------ 禁令标志 ------
                         entries.add(ChineseCoreBuildingBlocks.axle_weight_limit.asItem());
                         entries.add(ChineseCoreBuildingBlocks.do_not_enter.asItem());

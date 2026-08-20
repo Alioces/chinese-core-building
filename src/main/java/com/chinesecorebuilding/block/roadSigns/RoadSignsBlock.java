@@ -1,10 +1,7 @@
 package com.chinesecorebuilding.block.roadSigns;
 
 import com.chinesecorebuilding.block.CustomBlock;
-import com.chinesecorebuilding.block.properties.Directional;
-import com.chinesecorebuilding.block.properties.Offset;
-import com.chinesecorebuilding.block.properties.Layered;
-import com.chinesecorebuilding.block.properties.RenderLayerType;
+import com.chinesecorebuilding.block.properties.*;
 import com.chinesecorebuilding.util.BlockUtil;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -34,7 +31,7 @@ import net.minecraft.world.BlockView;
  * @see CustomBlock
  * @see Directional
  */
-public class RoadSignsBlock extends CustomBlock implements Directional, Layered {
+public class RoadSignsBlock extends CustomBlock implements Directional, Layered, Offset {
 
     /**
      * 偏移量（单位：格）。
@@ -43,20 +40,29 @@ public class RoadSignsBlock extends CustomBlock implements Directional, Layered 
      * 3.5 像素 = 3.5 / 16 = 0.21875 格。
      * </p>
      */
-    private static final float OFFSET = BlockUtil.blockConstraint(3.5f);
+    private float OFFSET_XOZ = BlockUtil.blockConstraint(1.5f);
+    private float OFFSET_Y = BlockUtil.blockConstraint(0.0f);
 
     // ====== 各朝向的轮廓箱（VoxelShape） ======
     // 模型默认位于 +Z 侧（南侧）边缘，旋转后位于对应朝向侧边缘
     // 偏移将模型从边缘推向中心，轮廓箱需覆盖渲染后的模型位置
 
-    /** 朝北时，模型旋转 180° 后在北侧边缘，偏移 +Z 推向中心 */
-    private static final VoxelShape NORTH_SHAPE = VoxelShapes.cuboid(0, 0, BlockUtil.blockConstraint(-4.0), 1, 1, BlockUtil.blockConstraint(12.0));
-    /** 朝南时，模型无旋转在南侧边缘，偏移 -Z 推向中心 */
-    private static final VoxelShape SOUTH_SHAPE = VoxelShapes.cuboid(0, 0, BlockUtil.blockConstraint(4.0), 1, 1, BlockUtil.blockConstraint(20.0));
-    /** 朝东时，模型旋转 270° 后在东侧边缘，偏移 -X 推向中心 */
-    private static final VoxelShape EAST_SHAPE = VoxelShapes.cuboid(BlockUtil.blockConstraint(4.0), 0, 0, BlockUtil.blockConstraint(20.0), 1, 1);
-    /** 朝西时，模型旋转 90° 后在西侧边缘，偏移 +X 推向中心 */
-    private static final VoxelShape WEST_SHAPE = VoxelShapes.cuboid(BlockUtil.blockConstraint(-4.0), 0, 0, BlockUtil.blockConstraint(12.0), 1, 1);
+    /**
+     * 朝北时，模型旋转 180° 后在北侧边缘，偏移 +Z 推向中心
+     */
+    private static final VoxelShape NORTH_SHAPE = VoxelShapes.cuboid(0, 0, BlockUtil.blockConstraint(-2.0), 1, 1, BlockUtil.blockConstraint(10.0));
+    /**
+     * 朝南时，模型无旋转在南侧边缘，偏移 -Z 推向中心
+     */
+    private static final VoxelShape SOUTH_SHAPE = VoxelShapes.cuboid(0, 0, BlockUtil.blockConstraint(2.0), 1, 1, BlockUtil.blockConstraint(18.0));
+    /**
+     * 朝东时，模型旋转 270° 后在东侧边缘，偏移 -X 推向中心
+     */
+    private static final VoxelShape EAST_SHAPE = VoxelShapes.cuboid(BlockUtil.blockConstraint(2.0), 0, 0, BlockUtil.blockConstraint(18.0), 1, 1);
+    /**
+     * 朝西时，模型旋转 90° 后在西侧边缘，偏移 +X 推向中心
+     */
+    private static final VoxelShape WEST_SHAPE = VoxelShapes.cuboid(BlockUtil.blockConstraint(-2.0), 0, 0, BlockUtil.blockConstraint(10.0), 1, 1);
 
     /**
      * 构造函数。
@@ -69,6 +75,32 @@ public class RoadSignsBlock extends CustomBlock implements Directional, Layered 
     public RoadSignsBlock(Settings settings) {
         super(settings);
         setDefaultState(initDirection(getDefaultState()));
+    }
+
+    /**
+     * 构造函数（支持自定义偏移量）。
+     *
+     * @param settings 方块属性配置
+     * @param offset   偏移量计算函数，返回 {@code {offsetXZ, offsetY}}（像素值）
+     */
+    public RoadSignsBlock(Settings settings, OffsetFunction offset) {
+        this(settings);
+
+        this.OFFSET_XOZ = BlockUtil.blockConstraint(offset.getOffset()[0]);
+        this.OFFSET_Y = BlockUtil.blockConstraint(offset.getOffset()[1]);
+    }
+
+    /**
+     * 构造函数（仅自定义 Y 轴偏移量）。
+     * <p>
+     * 水平偏移量固定为 1.5 像素，仅允许调整 Y 轴偏移。
+     * </p>
+     *
+     * @param settings 方块属性配置
+     * @param OFFSET_Y Y 轴偏移量（像素值）
+     */
+    public RoadSignsBlock(Settings settings, float OFFSET_Y) {
+        this(settings, () -> new float[]{1.5f, OFFSET_Y});
     }
 
     /**
@@ -109,9 +141,9 @@ public class RoadSignsBlock extends CustomBlock implements Directional, Layered 
         return switch (state.get(FACING)) {
             case NORTH -> NORTH_SHAPE;
             case SOUTH -> SOUTH_SHAPE;
-            case EAST  -> EAST_SHAPE;
-            case WEST  -> WEST_SHAPE;
-            default    -> VoxelShapes.fullCube();
+            case EAST -> EAST_SHAPE;
+            case WEST -> WEST_SHAPE;
+            default -> VoxelShapes.fullCube();
         };
     }
 
@@ -141,16 +173,16 @@ public class RoadSignsBlock extends CustomBlock implements Directional, Layered 
      *
      * @return 偏移量数组 {dx, dz}
      */
-//    @Override
-//    public float[] getOffset(BlockState state) {
-//        return switch (state.get(FACING)) {
-//            case SOUTH -> new float[]{0,        OFFSET};  // 南侧边缘 → 向中心推（-Z）
-//            case NORTH -> new float[]{0,       -OFFSET};  // 北侧边缘 → 向中心推（+Z）
-//            case EAST  -> new float[]{ OFFSET, 0};       // 东侧边缘 → 向中心推（-X）
-//            case WEST  -> new float[]{-OFFSET, 0};       // 西侧边缘 → 向中心推（+X）
-//            default    -> new float[]{0, 0};
-//        };
-//    }
+    @Override
+    public float[] getOffset(BlockState state) {
+        return switch (state.get(FACING)) {
+            case SOUTH -> new float[]{0, OFFSET_Y, OFFSET_XOZ};  // 南侧边缘 → 向中心推（-Z）
+            case NORTH -> new float[]{0, OFFSET_Y, -OFFSET_XOZ};  // 北侧边缘 → 向中心推（+Z）
+            case EAST -> new float[]{OFFSET_XOZ, OFFSET_Y, 0};       // 东侧边缘 → 向中心推（-X）
+            case WEST -> new float[]{-OFFSET_XOZ, OFFSET_Y, 0};       // 西侧边缘 → 向中心推（+X）
+            default -> new float[]{0, 0, 0};
+        };
+    }
 
     @Override
     public RenderLayerType getRenderLayerType() {

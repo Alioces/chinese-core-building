@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "chinese-core-building:block/obstacle_bypass_both_sides"
+      },
+      "when": {
+        "facing": "north"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/obstacle_bypass_both_sides"
+      },
+      "when": {
+        "facing": "east"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/obstacle_bypass_both_sides"
+      },
+      "when": {
+        "facing": "south"
+      }
+    },
+    {
+      "apply": {
+        "model": "chinese-core-building:block/obstacle_bypass_both_sides"
+      },
+      "when": {
+        "facing": "west"
+      }
+    }
+  ]
+}
