@@ -37,9 +37,11 @@ loom {
 	}
 }
 
-fabricApi {
-	configureDataGeneration {
-		client = true
+sourceSets {
+	main {
+		resources {
+			srcDir("src/main/generated")
+		}
 	}
 }
 
@@ -101,7 +103,7 @@ publishing {
 		}
 	}
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing maven publications.
 	repositories {
 		// Add repositories to publish to here.
 		// Notice: This block does NOT have the same function as the block in the top level.

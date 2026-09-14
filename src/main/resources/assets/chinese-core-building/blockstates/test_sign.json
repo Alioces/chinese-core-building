@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "chinese-core-building:block/test_sign" },
+    "facing=south": { "model": "chinese-core-building:block/test_sign" },
+    "facing=east":  { "model": "chinese-core-building:block/test_sign" },
+    "facing=west":  { "model": "chinese-core-building:block/test_sign" }
+  }
+}
