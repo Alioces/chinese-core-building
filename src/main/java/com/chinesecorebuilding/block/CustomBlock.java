@@ -1,7 +1,15 @@
 package com.chinesecorebuilding.block;
 
+import com.chinesecorebuilding.block.properties.Interactive;
 import com.chinesecorebuilding.block.roadSigns.RoadSignsBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 /**
  * 自定义方块抽象基类。
@@ -10,25 +18,26 @@ import net.minecraft.block.Block;
  * 提供统一的构造入口和属性扩展机制，子类可在此基础上添加特定属性（如朝向）。
  * </p>
  * <p>
- * 继承层次：
- * <pre>
- * Block (Minecraft)
- *   └── CustomBlock (本类)
- *         └── RoadSignsBlock (路标方块)
- * </pre>
+ * 自动调度服务端交互：覆盖 {@link #onUse}，若当前方块实现了 {@link Interactive}
+ * 且返回了非 null 的 {@link com.chinesecorebuilding.block.properties.BlockInteraction}，
+ * 则委托执行。否则走原版默认逻辑。
  * </p>
- *
- * @see RoadSignsBlock
  */
 public class CustomBlock extends Block {
 
-    /**
-     * 构造函数。
-     *
-     * @param settings 方块属性配置（硬度、爆炸抗性、透明度等），
-     *                 通过 {@link net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings} 构建
-     */
     public CustomBlock(Settings settings) {
         super(settings);
+    }
+
+    @Override
+    public ActionResult onUse(BlockState state, World world, BlockPos pos,
+                              PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (this instanceof Interactive interactive) {
+            var handler = interactive.getInteraction();
+            if (handler != null) {
+                return handler.interact(state, world, pos, player, hand, hit);
+            }
+        }
+        return super.onUse(state, world, pos, player, hand, hit);
     }
 }
