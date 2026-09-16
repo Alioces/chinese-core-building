@@ -4,12 +4,14 @@ package com.chinesecorebuilding.block.properties;
  * 方块交互能力接口。
  * <p>
  * 实现此接口的方块声明自己拥有交互能力。
- * 默认提供三层能力：
+ * 默认提供两层能力：
  * <ol>
  *   <li>服务端交互处理器 ({@link #getInteraction}) —— 自定义服务端行为</li>
- *   <li>客户端 GUI 标记 ({@link #shouldOpenGui}) —— 声明需要弹出编辑界面</li>
  *   <li>默认行为阻断 ({@link #blocksDefaultInteraction}) —— 声明是否阻止原版右键默认行为</li>
  * </ol>
+ * </p>
+ * <p>
+ * 客户端 GUI 交互由子接口 {@link GuiInteractive} 特化处理。
  * </p>
  * <p>
  * CustomBlock.onUse 的处理优先级：
@@ -19,6 +21,9 @@ package com.chinesecorebuilding.block.properties;
  * 否则 → super.onUse()（走原版逻辑，通常返回 PASS 让放置继续）
  * </pre>
  * </p>
+ *
+ * @see GuiInteractive
+ * @see BlockInteraction
  */
 public interface Interactive {
 
@@ -33,20 +38,6 @@ public interface Interactive {
      */
     default BlockInteraction getInteraction() {
         return null;
-    }
-
-    /**
-     * 标记此方块是否需要客户端打开编辑 GUI。
-     * <p>
-     * ChineseCoreBuildingClient 会监听 Fabric 的 UseBlockCallback，
-     * 若 {@code shouldOpenGui()} 返回 true 且方块实现了 Interactive，
-     * 则自动打开 SignBlockScreen 编辑器。
-     * </p>
-     *
-     * @return true 表示右键时应该打开 GUI
-     */
-    default boolean shouldOpenGui() {
-        return false;
     }
 
     /**

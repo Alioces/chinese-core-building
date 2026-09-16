@@ -33,7 +33,7 @@ import net.minecraft.world.BlockView;
  * </p>
  */
 public class TestSignBlock extends CustomBlock
-        implements Directional, Layered, Interactive,
+        implements Directional, Layered, GuiInteractive,
                    BlockEntityProvider, SignTextProvider {
 
     /**
@@ -174,15 +174,5 @@ public class TestSignBlock extends CustomBlock
     @Override
     public BlockEntityType<? extends SignBlockEntity> getBlockEntityType() {
         return ENTITY_TYPE;
-    }
-
-    /**
-     * 声明右键时应该打开 GUI——客户端侧 UseBlockCallback 会读取此值触发 SignBlockScreen。
-     *
-     * @return true
-     */
-    @Override
-    public boolean shouldOpenGui() {
-        return true;
     }
 }

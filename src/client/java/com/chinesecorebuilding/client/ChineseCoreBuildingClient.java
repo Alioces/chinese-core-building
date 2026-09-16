@@ -1,7 +1,7 @@
 package com.chinesecorebuilding.client;
 
 import com.chinesecorebuilding.block.TestSignBlock;
-import com.chinesecorebuilding.block.properties.Interactive;
+import com.chinesecorebuilding.block.properties.GuiInteractive;
 import com.chinesecorebuilding.block.properties.model.Layered;
 import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
@@ -75,8 +75,8 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         //    但 SignBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
         BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, SignBlockRenderer::new);
 
-        // 6. 交互回调：客户端右键方块时检测 Interactive.shouldOpenGui()
-        //    打开 SignBlockScreen 编辑器。不在 main 源集引用 client 类，
+        // 6. 交互回调：客户端右键方块时检测 GuiInteractive
+        //    检查前置条件后打开 SignBlockScreen 编辑器。不在 main 源集引用 client 类，
         //    保持 main → client 的单向依赖。
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!world.isClient) return ActionResult.PASS;   // 只在客户端处理
@@ -84,10 +84,19 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
 
             BlockPos pos = hit.getBlockPos();
             Block block = world.getBlockState(pos).getBlock();
-            // 命中 Interactive 且 shouldOpenGui() 返回 true → 打开编辑 GUI
-            if (block instanceof Interactive interactive && interactive.shouldOpenGui()) {
-                MinecraftClient.getInstance().setScreen(new SignBlockScreen(pos));
-                return ActionResult.SUCCESS;
+            
+            // 检查 GuiInteractive（支持前置检查和回调）
+            if (block instanceof GuiInteractive guiInteractive) {
+                // 前置条件检查
+                if (guiInteractive.canOpenGui(player, pos)) {
+                    // 默认打开 SignBlockScreen
+                    net.minecraft.client.gui.screen.Screen screen = new SignBlockScreen(pos);
+                    MinecraftClient.getInstance().setScreen(screen);
+                    // 回调逻辑
+                    guiInteractive.onGuiOpened(player, pos);
+                    return ActionResult.SUCCESS;
+                }
+                return ActionResult.SUCCESS;   // 阻止后续逻辑
             }
             return ActionResult.PASS;
         });
