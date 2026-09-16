@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.block.properties;
+package com.chinesecorebuilding.block.properties.model;
 
 import com.chinesecorebuilding.block.entity.SignBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
@@ -31,7 +31,7 @@ import java.util.List;
  * 不修改既有接口和处理器的逻辑。
  * </p>
  */
-public interface SignTextProvider {
+public interface SignTextProvider extends ModelBakeDecorator {
 
     /**
      * 获取此类方块使用的 BlockEntityType。

@@ -37,8 +37,14 @@ import java.nio.file.Path;
  */
 public class RoadSignsBlockDataProvider extends FabricModelProvider {
 
+	/** Fabric 数据输出接口，用于解析 generated 输出路径 */
 	private final FabricDataOutput dataOutput;
 
+	/**
+	 * 构造函数。
+	 *
+	 * @param output Fabric 数据生成器输出接口
+	 */
 	public RoadSignsBlockDataProvider(FabricDataOutput output) {
 		super(output);
 		this.dataOutput = output;
@@ -52,6 +58,14 @@ public class RoadSignsBlockDataProvider extends FabricModelProvider {
 		return "RoadSignsBlock Specialized Models";
 	}
 
+	/**
+	 * Blockstate 生成占位——委托给 {@link CustomBlockModelProvider} 基础阶段处理。
+	 * <p>
+	 * 本类只负责特化物品模型的生成，blockstate 已由基础阶段统一生成。
+	 * </p>
+	 *
+	 * @param generator 方块状态模型生成器
+	 */
 	@Override
 	public void generateBlockStateModels(BlockStateModelGenerator generator) {
 		// blockstate 由 CustomBlockModelProvider 基础生成阶段处理，此处无需操作

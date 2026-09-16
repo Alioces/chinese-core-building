@@ -41,6 +41,11 @@ import org.jetbrains.annotations.Nullable;
 public abstract class CustomBlockEntity extends BlockEntity {
 
     /**
+     * 构造函数，直接透传到 {@link BlockEntity} 基类。
+     * <p>
+     * 子类调用此构造函数即可获得统一的 markModified + 自动同步能力。
+     * </p>
+     *
      * @param type  BlockEntityType（必须由注册表创建）
      * @param pos   方块位置
      * @param state 方块状态
@@ -76,6 +81,16 @@ public abstract class CustomBlockEntity extends BlockEntity {
         }
     }
 
+    /**
+     * 构造初始区块数据 NBT。
+     * <p>
+     * Minecraft 原版在区块加载阶段调用此方法获取 BlockEntity 的初始数据，
+     * 由 {@link #toUpdatePacket} 作为主数据源，本方法在此基础上追加写入 {@link #writeNbt} 的自定义字段，
+     * 确保区块首次加载时就携带完整的业务数据。
+     * </p>
+     *
+     * @return 包含基础 NBT + writeNbt 自定义字段的 NbtCompound
+     */
     @Override
     public NbtCompound toInitialChunkDataNbt() {
         NbtCompound nbt = super.toInitialChunkDataNbt();
@@ -83,6 +98,16 @@ public abstract class CustomBlockEntity extends BlockEntity {
         return nbt;
     }
 
+    /**
+     * 生成客户端同步用的更新数据包。
+     * <p>
+     * Fabric/原版的标准做法：创建 {@link BlockEntityUpdateS2CPacket}，
+     * 它会调用本类的 {@link #writeNbt} 写入自定义字段，
+     * 客户端收到后自动调用 {@link #readNbt} 恢复状态。
+     * </p>
+     *
+     * @return 更新数据包，或 null（不可发送时）
+     */
     @Nullable
     @Override
     public Packet<ClientPlayPacketListener> toUpdatePacket() {

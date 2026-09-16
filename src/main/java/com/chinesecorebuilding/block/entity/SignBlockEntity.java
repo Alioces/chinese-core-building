@@ -30,10 +30,23 @@ import java.util.List;
  */
 public class SignBlockEntity extends CustomBlockEntity {
 
-    /** 所有文字行，按列表顺序依次渲染 */
+    /**
+     * 所有文字行列表。
+     * <p>
+     * 按列表顺序依次渲染，支持动态添加、删除、修改。
+     * 外部访问应使用 {@link #getLines()} 返回的只读视图，
+     * 修改必须通过本类的 addLine / removeLine / updateLine 等方法，
+     * 以触发 {@link CustomBlockEntity#markModified()} 同步。
+     * </p>
+     */
     private List<TextLine> lines = new ArrayList<>();
 
     /**
+     * 构造函数，调用父类 {@link CustomBlockEntity} 初始化。
+     * <p>
+     * 创建后默认 lines 为空列表，等待后续通过 {@link #addLine} / {@link #setLines} 填充。
+     * </p>
+     *
      * @param type  BlockEntityType（必须由注册表创建）
      * @param pos   方块位置
      * @param state 方块状态

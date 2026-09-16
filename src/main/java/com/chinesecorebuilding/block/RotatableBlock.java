@@ -1,6 +1,6 @@
 package com.chinesecorebuilding.block;
 
-import com.chinesecorebuilding.block.properties.Rotatable;
+import com.chinesecorebuilding.block.properties.model.Rotatable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemPlacementContext;

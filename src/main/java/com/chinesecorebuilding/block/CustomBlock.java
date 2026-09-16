@@ -25,19 +25,57 @@ import net.minecraft.world.World;
  */
 public class CustomBlock extends Block {
 
+    /**
+     * 构造函数，直接透传设置到 {@link Block} 基类。
+     * <p>
+     * 子类（如 {@link RoadSignsBlock}、{@link com.chinesecorebuilding.block.TestSignBlock}、
+     * {@link RotatableBlock}）都通过此构造函数初始化，由子类负责设置默认 blockstate 属性。
+     * </p>
+     *
+     * @param settings 方块属性配置（材质、碰撞、硬度、透明度等）
+     */
     public CustomBlock(Settings settings) {
         super(settings);
     }
 
+    /**
+     * 右键交互分发器。
+     * <p>
+     * 三级决策链：
+     * <ol>
+     *   <li>若方块实现 {@link Interactive} 且 {@code getInteraction() != null}
+     *       → 完全交给 handler，handler 的 ActionResult 决定一切</li>
+     *   <li>若 {@code getInteraction() == null} 但 {@code blocksDefaultInteraction() == true}
+     *       → 返回 CONSUME 阻断原版默认行为（防止 BlockItem 在旁边放置新方块）</li>
+     *   <li>否则 → {@code super.onUse()} 走原版逻辑（通常返回 PASS 放行放置）</li>
+     * </ol>
+     * </p>
+     *
+     * @param state  当前方块状态
+     * @param world  方块所在世界
+     * @param pos    方块位置
+     * @param player 右键玩家
+     * @param hand   使用的手
+     * @param hit    命中细节
+     * @return 交互结果，CONSUME / SUCCESS 阻断后续行为，PASS 放行
+     */
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos,
                               PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (this instanceof Interactive interactive) {
             var handler = interactive.getInteraction();
             if (handler != null) {
+                // 有自定义处理器 → 完全交给 handler，handler 的 ActionResult 决定一切
                 return handler.interact(state, world, pos, player, hand, hit);
             }
+            // 无自定义处理器但声明要阻断默认行为 → 返回 CONSUME 阻止放置/容器等
+            // TestSignBlock 就是这种情况：它只需要客户端开 GUI，服务端不需要额外逻辑
+            // 但必须返回 CONSUME 防止 BlockItem 在旁边放置新方块
+            if (interactive.blocksDefaultInteraction()) {
+                return ActionResult.CONSUME;
+            }
         }
+        // 非 Interactive 或显式关闭了阻断 → 走原版逻辑（通常返回 PASS 让放置继续）
         return super.onUse(state, world, pos, player, hand, hit);
     }
 }

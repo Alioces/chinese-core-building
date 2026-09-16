@@ -1,4 +1,6 @@
-package com.chinesecorebuilding.block.properties;
+package com.chinesecorebuilding.util;
+
+import com.chinesecorebuilding.block.properties.model.Offset;
 
 /**
  * 偏移量计算函数式接口。

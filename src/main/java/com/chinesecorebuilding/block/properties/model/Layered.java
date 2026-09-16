@@ -1,4 +1,6 @@
-package com.chinesecorebuilding.block.properties;
+package com.chinesecorebuilding.block.properties.model;
+
+import com.chinesecorebuilding.block.properties.RenderLayerType;
 
 /**
  * 可声明渲染层的方块接口。
@@ -29,9 +31,9 @@ public interface Layered {
      * 客户端会自动读取此值并映射到对应的渲染层。
      * </p>
      *
-     * @return 渲染层类型
+     * @return 渲染层类型，默认 {@link RenderLayerType#SOLID}
      */
-    default RenderLayerType getRenderLayerType(){
+    default RenderLayerType getRenderLayerType() {
         return RenderLayerType.SOLID;
-    };
+    }
 }

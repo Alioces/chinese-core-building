@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.block.properties;
+package com.chinesecorebuilding.block.properties.model;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -41,7 +41,7 @@ import net.minecraft.world.BlockView;
  *
  * @see Properties#ROTATION
  */
-public interface Rotatable {
+public interface Rotatable extends ModelWorldTransformer {
 
     /**
      * 旋转属性。

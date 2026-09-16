@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.block.properties;
+package com.chinesecorebuilding.block.properties.model;
 
 import net.minecraft.block.BlockState;
 
@@ -32,7 +32,7 @@ import net.minecraft.block.BlockState;
  * @see Directional
  * @see com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel
  */
-public interface Offset {
+public interface Offset extends ModelWorldTransformer {
 
     /**
      * 根据方块状态计算渲染偏移量。

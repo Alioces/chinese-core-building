@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.block.properties;
+package com.chinesecorebuilding.block.properties.model;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

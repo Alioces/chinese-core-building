@@ -28,9 +28,9 @@ public class ChineseCoreBuildingGroups {
      * 在创造模式物品栏中显示为一个独立标签页，包含所有路标类方块。
      * </p>
      * <ul>
-     *     <li>图标：堤坝路标方块</li>
+     *     <li>图标：堤坝路标方块 ({@link ChineseCoreBuildingBlocks#embankment_road01})</li>
      *     <li>显示名称：翻译键 {@code itemGroup.chinese-core-building.group.road}</li>
-     *     <li>内容：所有注册的路标方块物品</li>
+     *     <li>内容：所有注册的路标方块物品（警告标志 + 禁令标志）</li>
      * </ul>
      */
     public static final ItemGroup ROAD_GROUP = Registry.register(

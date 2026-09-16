@@ -1,7 +1,7 @@
 package com.chinesecorebuilding.block.roadSigns;
 
 import com.chinesecorebuilding.block.CustomBlock;
-import com.chinesecorebuilding.block.properties.Rotatable;
+import com.chinesecorebuilding.block.properties.model.Rotatable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;

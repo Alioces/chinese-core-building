@@ -38,13 +38,29 @@ public record TextLine(
         NbtCompound extra
 ) {
 
-    /** 默认颜色：黑色（0x000000） */
+    /**
+     * 默认颜色：黑色（0x000000）。
+     * <p>
+     * 当颜色字段缺失或解析失败时使用此默认值。
+     * </p>
+     */
     public static final int DEFAULT_COLOR = 0;
 
-    /** 默认缩放：1.0（不缩放） */
+    /**
+     * 默认缩放：1.0（不缩放）。
+     * <p>
+     * 当缩放字段缺失或值小于等于 0 时使用此默认值。
+     * </p>
+     */
     public static final float DEFAULT_SCALE = 1.0f;
 
-    /** 默认位置：+Z 面中心 (0.5, 0.5, 1.0) */
+    /**
+     * 默认位置：+Z 面中心 (0.5, 0.5, 1.0)。
+     * <p>
+     * 表示文字行默认显示在方块 +Z 面的中心位置。
+     * 坐标范围为 0~1，相对于方块局部空间。
+     * </p>
+     */
     public static final Vec3d DEFAULT_POSITION = new Vec3d(0.5, 0.5, 1.0);
 
     /**
@@ -197,11 +213,17 @@ public record TextLine(
      * </p>
      */
     public static class Builder {
+        /** 文字内容（支持 JSON 富文本），默认 {@link Text#empty()} */
         private Text text = Text.empty();
+        /** 方块空间相对偏移坐标 (0.5,0.5,1.0 = +Z 面中心)，默认 {@link #DEFAULT_POSITION} */
         private Vec3d position = DEFAULT_POSITION;
+        /** 文字颜色 0xRRGGBB，默认黑色 {@link #DEFAULT_COLOR} */
         private int color = DEFAULT_COLOR;
+        /** 缩放因子，默认 1.0（不缩放）{@link #DEFAULT_SCALE} */
         private float scale = DEFAULT_SCALE;
+        /** 是否发光，默认 false */
         private boolean glowing = false;
+        /** 预留扩展容器，默认空 NbtCompound */
         private NbtCompound extra = new NbtCompound();
 
         /** 设置文字内容（null 自动兜底为 {@link Text#empty()}）。 */

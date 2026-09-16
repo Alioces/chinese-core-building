@@ -1,6 +1,6 @@
 package com.chinesecorebuilding.client.model.postProcessing;
 
-import com.chinesecorebuilding.block.properties.Rotatable;
+import com.chinesecorebuilding.block.properties.model.Rotatable;
 import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;
@@ -47,6 +47,8 @@ public class RotationBakedModel extends ForwardingBakedModel {
      * 方块中心坐标（旋转中心）。
      * <p>
      * 旋转围绕方块几何中心 (0.5, y, 0.5) 的 Y 轴进行。
+     * 此值与 {@link com.chinesecorebuilding.client.renderer.SignBlockRenderer#CENTER} 保持一致，
+     * 确保 BakedModel 管线和 BlockEntityRenderer 管线的旋转中心完全相同。
      * </p>
      */
     private static final float CENTER = 0.5f;

@@ -2,8 +2,8 @@ package com.chinesecorebuilding.client.datagen;
 
 import com.chinesecorebuilding.ChineseCoreBuildingMod;
 import com.chinesecorebuilding.block.CustomBlock;
-import com.chinesecorebuilding.block.properties.Directional;
-import com.chinesecorebuilding.block.properties.Rotatable;
+import com.chinesecorebuilding.block.properties.model.Directional;
+import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -54,9 +54,16 @@ import java.util.Map;
  */
 public class CustomBlockModelProvider extends FabricModelProvider {
 
+	/** Gson 实例，用于格式化输出 JSON（缩进 2 空格） */
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	/** Fabric 数据输出接口，用于解析 generated 输出路径和写回源资源文件 */
 	private final FabricDataOutput dataOutput;
 
+	/**
+	 * 构造函数。
+	 *
+	 * @param output Fabric 数据生成器输出接口
+	 */
 	public CustomBlockModelProvider(FabricDataOutput output) {
 		super(output);
 		this.dataOutput = output;
