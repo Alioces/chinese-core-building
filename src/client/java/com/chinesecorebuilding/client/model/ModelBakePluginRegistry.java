@@ -12,8 +12,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -21,57 +19,14 @@ import java.util.List;
 
 /**
  * 模型烘焙插件注册中心。
- * <p>
- * 管理所有模型烘焙阶段的插件，按优先级排序后依次执行。
- * 每个插件接收 BakeContext 和 BakedModelSpec，可以修改模型规格
- * 以添加子模型、应用贴图覆盖、注册动画等。
- * </p>
- *
- * <h3>使用示例：</h3>
- * <pre>
- * // 注册插件
- * ModelBakePluginRegistry.register(new SubModelComposerPlugin());
- * ModelBakePluginRegistry.register(new DynamicTexturePlugin());
- *
- * // 执行烘焙链
- * BakedModelSpec spec = ModelBakePluginRegistry.bakeChain(block, state, baseSpec);
- * </pre>
- *
- * @see ModelBakePlugin
- * @see BakeContext
- * @see BakedModelSpec
+ * 按优先级排序后依次执行，每个插件可修改 BakedModelSpec。
  */
 public final class ModelBakePluginRegistry {
 
-    /**
-     * 插件列表（按优先级排序）。
-     * <p>
-     * 数值越小的优先级越高，越先执行。
-     * 建议范围：
-     * <ul>
-     *   <li>-1000 ~ -500：基础模型处理（子模型、贴图）</li>
-     *   <li>-499 ~ 0：动画和动态效果</li>
-     *   <li>1 ~ 500：多方块协调</li>
-     *   <li>501 ~ 1000：最终修饰</li>
-     * </ul>
-     * </p>
-     */
+    /** 插件列表（按优先级排序，数值越小越先执行）。 */
     private static final List<ModelBakePlugin> plugins = new ArrayList<>();
 
-    /**
-     * SLF4J 日志记录器，用于输出子模型调试信息。
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger("SubModel");
-
-    /**
-     * 注册插件（自动按优先级排序）。
-     * <p>
-     * 插件注册后会自动插入到列表中的正确位置，
-     * 保证执行顺序始终按优先级从低到高。
-     * </p>
-     *
-     * @param plugin 插件实例
-     */
+    /** 注册插件（自动按优先级排序）。 */
     public static void register(ModelBakePlugin plugin) {
         plugins.add(plugin);
         plugins.sort(Comparator.comparingInt(ModelBakePlugin::getPriority));
@@ -79,43 +34,19 @@ public final class ModelBakePluginRegistry {
 
     /**
      * 执行所有插件，生成最终模型规格。
-     * <p>
-     * 按优先级顺序依次执行每个插件，前一个插件的输出
-     * 作为后一个插件的输入。只有实现了 ModelBakeDecorator
-     * 接口的方块才会触发插件链。
-     * </p>
-     *
-     * @param block    方块实例
-     * @param state    当前方块状态
-     * @param baseSpec 基础模型规格
-     * @return 处理后的最终模型规格
+     * 只有实现了 ModelBakeDecorator 的方块才会触发插件链。
      */
     public static BakedModelSpec bakeChain(Block block, BlockState state, BakedModelSpec baseSpec) {
-        // 如果方块没有实现 ModelBakeDecorator，直接返回基础规格
         if (!(block instanceof ModelBakeDecorator)) {
             return baseSpec;
         }
 
-        LOGGER.info("bakeChain 开始执行, 已注册插件数: {}", plugins.size());
-
         BakedModelSpec current = baseSpec;
         BakeContext context = new BakeContext(block, state, current);
 
-        for (int i = 0; i < plugins.size(); i++) {
-            ModelBakePlugin plugin = plugins.get(i);
-            boolean accepts = plugin.accepts(block);
-            LOGGER.info("插件 {}/{}: {} (priority={}) → {}",
-                (i + 1), plugins.size(),
-                plugin.getClass().getSimpleName(),
-                plugin.getPriority(),
-                accepts ? "✅接受" : "⏭️跳过");
-
-            if (accepts) {
-                int beforeSize = current.getSubModels().size();
+        for (ModelBakePlugin plugin : plugins) {
+            if (plugin.accepts(block)) {
                 current = plugin.bake(context);
-                int afterSize = current.getSubModels().size();
-                LOGGER.info("  执行完成, 子模型: {} → {}", beforeSize, afterSize);
-                // 更新上下文中的规格
                 context = new BakeContext(block, state, current);
             }
         }
@@ -125,55 +56,27 @@ public final class ModelBakePluginRegistry {
 
     /**
      * 注册所有内置插件。
-     * <p>
-     * 在客户端初始化时调用，注册所有内置的模型烘焙插件。
-     * 插件按优先级排序执行：
-     * <ol>
-     *   <li>SubModelComposerPlugin (-1000)：子模型组合</li>
-     *   <li>DynamicTexturePlugin (-900)：动态贴图</li>
-     *   <li>AnimationControllerPlugin (-500)：动画控制</li>
-     *   <li>EmissivePlugin (-400)：发光效果</li>
-     *   <li>MultiBlockCoordinatorPlugin (100)：多方块协调</li>
-     * </ol>
-     * </p>
+     * 优先级：SubModel(-1000) → DynamicTexture(-900) → Animation(-500) → Emissive(-400) → MultiBlock(100)
      */
     public static void registerAll() {
-        // 基础模型处理（优先级最高）
         register(new SubModelComposerPlugin());
         register(new DynamicTexturePlugin());
-
-        // 动画和动态效果
         register(new AnimationControllerPlugin());
         register(new EmissivePlugin());
-
-        // 多方块协调
         register(new MultiBlockCoordinatorPlugin());
     }
 
     /**
-     * 从模型 ID 解析对应的方块实例。
-     * <p>
-     * Fabric 的 modifyModelAfterBake 回调里 context.id() 返回的是模型 ID，
-     * 格式是 {@code namespace:block/block_name}（方块模型）或 {@code namespace:item/item_name}（物品模型）。
-     * 只有方块模型才走 BakedModel 管线，物品模型直接跳过。
-     * </p>
-     *
-     * @param modelId 模型 ID（格式 {@code namespace:block/block_name}）
-     * @return 对应的方块实例，若非方块模型或不存在则返回 null
+     * 从模型 ID 解析方块实例。
+     * 模型 ID 格式：namespace:block/block_name 或 namespace:item/item_name。
      */
     private static Block resolveBlock(Identifier modelId) {
-        // 非方块模型（如 item/xxx）直接跳过，方块插件不处理
         if (!modelId.getPath().startsWith("block/")) return null;
-        // 去掉 "block/" 前缀，得到方块名
         String blockPath = modelId.getPath().substring("block/".length());
-        // 用原 namespace + blockPath 拼出方块注册 ID
         Identifier blockId = new Identifier(modelId.getNamespace(), blockPath);
         return Registries.BLOCK.get(blockId);
     }
 
-    /**
-     * 工具类不允许实例化。
-     */
-    private ModelBakePluginRegistry() {
-    }
+    /** 工具类不允许实例化。 */
+    private ModelBakePluginRegistry() {}
 }

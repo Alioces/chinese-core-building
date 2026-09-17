@@ -49,12 +49,12 @@ public class WineCabinetBlock extends CustomBlock
      * </p>
      */
     private static final List<AnchorPoint> ANCHORS = List.of(
-        new AnchorPoint("bottle_slot_1", new Vec3d(0.25, 0.65, 0.5), Vec3d.ZERO, 0.3f),
-        new AnchorPoint("bottle_slot_2", new Vec3d(0.5,  0.65, 0.5), Vec3d.ZERO, 0.3f),
-        new AnchorPoint("bottle_slot_3", new Vec3d(0.75, 0.65, 0.5), Vec3d.ZERO, 0.3f),
-        new AnchorPoint("bottle_slot_4", new Vec3d(0.25, 0.35, 0.5), Vec3d.ZERO, 0.3f),
-        new AnchorPoint("bottle_slot_5", new Vec3d(0.5,  0.35, 0.5), Vec3d.ZERO, 0.3f),
-        new AnchorPoint("bottle_slot_6", new Vec3d(0.75, 0.35, 0.5), Vec3d.ZERO, 0.3f)
+        new AnchorPoint("bottle_slot_1", new Vec3d(0.25, 0.35, 0), Vec3d.ZERO, 0.2f),
+        new AnchorPoint("bottle_slot_2", new Vec3d(0.5,  0.35, 0), Vec3d.ZERO, 0.2f),
+        new AnchorPoint("bottle_slot_3", new Vec3d(0.75, 0.35, 0), Vec3d.ZERO, 0.2f),
+        new AnchorPoint("bottle_slot_4", new Vec3d(0.25, 0.35, 0.5), Vec3d.ZERO, 0.2f),
+        new AnchorPoint("bottle_slot_5", new Vec3d(0.5,  0.35, 0.5), Vec3d.ZERO, 0.2f),
+        new AnchorPoint("bottle_slot_6", new Vec3d(0.75, 0.35, 0.5), Vec3d.ZERO, 0.2f)
     );
 
     /**
