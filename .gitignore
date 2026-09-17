@@ -42,3 +42,6 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+/net/fabricmc/fabric/impl/client/indigo/renderer/render/AbstractBlockRenderContext.java
+/net/fabricmc/fabric/impl/client/indigo/renderer/render/AbstractRenderContext.java
+/net/fabricmc/fabric/api/renderer/v1/model/ForwardingBakedModel.java

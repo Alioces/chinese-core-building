@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.client.model.plugin;
 
+import com.chinesecorebuilding.block.properties.model.DynamicModelDecorator;
 import com.chinesecorebuilding.block.properties.model.StatefulTextureProvider;
 import com.chinesecorebuilding.client.model.ModelBakePlugin;
 import com.chinesecorebuilding.util.BakeContext;
@@ -84,11 +85,14 @@ public class DynamicTexturePlugin implements ModelBakePlugin {
         StatefulTextureProvider provider = (StatefulTextureProvider) block;
         TextureOverrideHandler handler = provider.getTextureOverrideHandler();
 
-        // 获取贴图覆盖映射
+        // 立即求值：生成 defaultState 对应的贴图覆盖（静态路径使用）
         Map<String, String> overrides = handler.handle(context.state());
-
-        // 应用到 BakedModelSpec
         context.spec().applyTextureOverrides(overrides);
+
+        // 延迟求值：仅当方块声明为动态装饰器时存储 handler
+        if (block instanceof DynamicModelDecorator) {
+            context.spec().registerDeferredTextureOverrideHandler(handler);
+        }
 
         return context.spec();
     }

@@ -1,8 +1,10 @@
 package com.chinesecorebuilding.block.properties.model;
 
+import com.chinesecorebuilding.util.PlacementBehavior;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
@@ -14,8 +16,9 @@ import net.minecraft.world.BlockView;
 /**
  * 可旋转方块接口。
  * <p>
- * 为方块提供旋转能力支持，接口仅定义旋转属性的注册与状态管理，
- * 具体地旋转角度计算与放置逻辑由实现类自行决定。
+ * 为方块提供旋转能力支持，放置时通过 {@link PlacementBehavior#onPlace}
+ * 自动根据玩家朝向设置 {@link #ROTATION} 属性。
+ * 子接口（如 {@link Directional}）可重写 {@code onPlace} 改用 FACING 等更高层次朝向。
  * </p>
  * <p>
  * 旋转渲染由客户端 {@code RotationBakedModel} 在渲染阶段实时完成，
@@ -41,7 +44,7 @@ import net.minecraft.world.BlockView;
  *
  * @see Properties#ROTATION
  */
-public interface Rotatable extends ModelWorldTransformer {
+public interface Rotatable extends ModelWorldTransformer, PlacementBehavior {
 
     /**
      * 旋转属性。
@@ -120,6 +123,25 @@ public interface Rotatable extends ModelWorldTransformer {
         if (state == null || !state.contains(ROTATION)) return 0;
         int rotation = calculateRotation(state.get(ROTATION));
         return (float) (rotation * 22.5 * Math.PI / 180.0);
+    }
+
+    /**
+     * 放置时根据玩家朝向自动设置 ROTATION 属性。
+     * <p>
+     * {@link PlacementBehavior#onPlace} 的实现，
+     * 将玩家水平朝向写入 ROTATION 属性。
+     * 子接口（如 {@link Directional}）可重写此方法，
+     * 改用 FACING 等更高层次的朝向属性。
+     * </p>
+     *
+     * @param baseState 父类的初始放置状态
+     * @param ctx       物品放置上下文，包含玩家朝向等信息
+     * @return 附加了 ROTATION 属性的方块状态
+     */
+    @Override
+    default BlockState onPlace(BlockState baseState, ItemPlacementContext ctx) {
+        return baseState.with(ROTATION, calculateRotation(
+                ctx.getHorizontalPlayerFacing().getHorizontal()));
     }
 
     /**

@@ -10,7 +10,6 @@ import com.chinesecorebuilding.util.OffsetFunction;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
-import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
@@ -119,17 +118,6 @@ public class RoadSignsBlock extends CustomBlock
      */
     public RoadSignsBlock(Settings settings, float OFFSET_Y) {
         this(settings, () -> new float[]{1.5f, OFFSET_Y});
-    }
-
-    /**
-     * 放置时根据玩家朝向自动设置 FACING 属性。
-     *
-     * @param ctx 物品放置上下文
-     * @return 带有正确 FACING 的方块状态
-     */
-    @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return super.getPlacementState(ctx).with(FACING, calculateDirection(ctx));
     }
 
     /**

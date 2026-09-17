@@ -1,6 +1,9 @@
 package com.chinesecorebuilding.util;
 
 import com.chinesecorebuilding.util.handler.AnimationHandler;
+import com.chinesecorebuilding.util.handler.EmissiveHandler;
+import com.chinesecorebuilding.util.handler.SubModelHandler;
+import com.chinesecorebuilding.util.handler.TextureOverrideHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
@@ -51,6 +54,26 @@ public class BakedModelSpec {
      * 动画处理器（用于运行时动态变换）。
      */
     private AnimationHandler animationHandler;
+
+    /**
+     * 子模型处理器（延迟求值，渲染时根据实际 BlockState 计算子模型 ID）。
+     */
+    private SubModelHandler deferredSubModelHandler;
+
+    /**
+     * 锚点列表（配合 {@link #deferredSubModelHandler} 在渲染时生成子模型）。
+     */
+    private List<AnchorPoint> deferredAnchors;
+
+    /**
+     * 贴图覆盖处理器（延迟求值，渲染时根据实际 BlockState 计算贴图覆盖）。
+     */
+    private TextureOverrideHandler deferredTextureOverrideHandler;
+
+    /**
+     * 发光处理器（延迟求值，渲染时根据实际 BlockState 计算发光等级）。
+     */
+    private EmissiveHandler deferredEmissiveHandler;
 
     /**
      * 连接的多方块部分位置列表。
@@ -123,12 +146,90 @@ public class BakedModelSpec {
     }
 
     /**
+     * 注册延迟求值的子模型处理器。
+     * <p>
+     * 与 {@link #addSubModel} 的立即求值不同，此方法存储原始的
+     * {@link SubModelHandler} 引用，在渲染时根据实际 BlockState 动态计算子模型 ID，
+     * 解决烘焙阶段只能拿到 defaultState 导致的上下文丢失问题。
+     * </p>
+     *
+     * @param handler 子模型处理器
+     * @param anchors 锚点列表
+     */
+    public void registerDeferredSubModelHandler(SubModelHandler handler, List<AnchorPoint> anchors) {
+        this.deferredSubModelHandler = handler;
+        this.deferredAnchors = anchors;
+    }
+
+    /**
+     * 注册延迟求值的贴图覆盖处理器。
+     * <p>
+     * 与 {@link #applyTextureOverrides} 的立即求值不同，此方法存储原始的
+     * {@link TextureOverrideHandler} 引用，在渲染时根据实际 BlockState 动态计算贴图覆盖。
+     * </p>
+     *
+     * @param handler 贴图覆盖处理器
+     */
+    public void registerDeferredTextureOverrideHandler(TextureOverrideHandler handler) {
+        this.deferredTextureOverrideHandler = handler;
+    }
+
+    /**
+     * 注册延迟求值的发光处理器。
+     * <p>
+     * 与 {@link #setEmissiveLevel} 的立即求值不同，此方法存储原始的
+     * {@link EmissiveHandler} 引用，在渲染时根据实际 BlockState 动态计算发光等级。
+     * </p>
+     *
+     * @param handler 发光处理器
+     */
+    public void registerDeferredEmissiveHandler(EmissiveHandler handler) {
+        this.deferredEmissiveHandler = handler;
+    }
+
+    /**
      * 获取动画处理器。
      *
      * @return 动画处理器实例，如果未注册则返回 null
      */
     public AnimationHandler getAnimationHandler() {
         return animationHandler;
+    }
+
+    /**
+     * 获取延迟求值的子模型处理器。
+     *
+     * @return 子模型处理器，如果未注册则返回 null
+     */
+    public SubModelHandler getDeferredSubModelHandler() {
+        return deferredSubModelHandler;
+    }
+
+    /**
+     * 获取延迟求值的锚点列表。
+     *
+     * @return 锚点列表，如果未注册则返回 null
+     */
+    public List<AnchorPoint> getDeferredAnchors() {
+        return deferredAnchors;
+    }
+
+    /**
+     * 获取延迟求值的贴图覆盖处理器。
+     *
+     * @return 贴图覆盖处理器，如果未注册则返回 null
+     */
+    public TextureOverrideHandler getDeferredTextureOverrideHandler() {
+        return deferredTextureOverrideHandler;
+    }
+
+    /**
+     * 获取延迟求值的发光处理器。
+     *
+     * @return 发光处理器，如果未注册则返回 null
+     */
+    public EmissiveHandler getDeferredEmissiveHandler() {
+        return deferredEmissiveHandler;
     }
 
     /**

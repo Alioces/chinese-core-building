@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.client.model;
 
+import com.chinesecorebuilding.block.properties.model.DynamicModelDecorator;
 import com.chinesecorebuilding.block.properties.model.ModelBakeDecorator;
 import com.chinesecorebuilding.client.model.postProcessing.SubModelBakedModel;
 import com.chinesecorebuilding.util.BakedModelSpec;
@@ -8,6 +9,8 @@ import net.minecraft.block.Block;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +48,9 @@ public final class ModelPluginRegistry {
     /** 变换阶段插件列表。 */
     private static final List<Entry> TRANSFORMERS = new ArrayList<>();
 
+    /** 日志记录器，用于诊断模型包装链。 */
+    private static final Logger LOGGER = LoggerFactory.getLogger("ModelPluginRegistry");
+
     /**
      * 注册一个模型插件。
      */
@@ -75,7 +81,10 @@ public final class ModelPluginRegistry {
      * 并用 SubModelBakedModel 包装含子模型的模型。
      * </p>
      * <p>
-     * 必须在 registerAll() 之后注册，确保 SubModelBakedModel 在装饰链最内侧。
+     * 必须在 {@link #registerAll()} 之前注册，确保 SubModelBakedModel（装饰器）
+     * 在变换层（RotationBakedModel/OffsetBakedModel）内侧。
+     * 回调注册顺序：先注册 = 内层，后注册 = 外层包装。
+     * 最终包装顺序：Offset(Rotation(Text(SubModel(原模型))))。
      * </p>
      */
     public static void registerBakeChainBridge() {
@@ -91,11 +100,26 @@ public final class ModelPluginRegistry {
                 );
 
                 BakedModel result = original;
-                if (!spec.getSubModels().isEmpty()) {
-                    result = new SubModelBakedModel(result, spec.getSubModels());
+
+                // 静态/动态分支：实现 DynamicModelDecorator 的方块走延迟求值路径
+                boolean isDynamic = block instanceof DynamicModelDecorator;
+                boolean hasSubModels = !spec.getSubModels().isEmpty()
+                        || (isDynamic && spec.getDeferredSubModelHandler() != null);
+
+                if (hasSubModels) {
+                    if (isDynamic) {
+                        // 动态路径：传入完整 spec，渲染时根据实际 BlockState 动态计算
+                        result = new SubModelBakedModel(result, spec);
+                        LOGGER.info("[bakeChainBridge] model={}, dynamic=true, deferredHandler={}",
+                                context.id(), spec.getDeferredSubModelHandler() != null);
+                    } else {
+                        // 静态路径：仅传入预计算列表，零运行时开销
+                        result = new SubModelBakedModel(result, spec.getSubModels());
+                        LOGGER.info("[bakeChainBridge] model={}, static=true, subModels={}",
+                                context.id(), spec.getSubModels().size());
+                    }
                 }
 
-                // TODO: 后续扩展 — EmissiveBakedModel / AnimatedBakedModel / DynamicTextureBakedModel
                 return result;
             });
         });
@@ -109,7 +133,12 @@ public final class ModelPluginRegistry {
             pluginContext.modifyModelAfterBake().register((original, context) -> {
                 Block block = resolveBlock(context.id());
                 if (block != null && entry.matcher().test(block)) {
-                    return entry.wrapper().apply(original);
+                    BakedModel wrapped = entry.wrapper().apply(original);
+                    LOGGER.info("[registerPlugin] model={}, wrapped={}({})",
+                            context.id(),
+                            wrapped.getClass().getSimpleName(),
+                            original.getClass().getSimpleName());
+                    return wrapped;
                 }
                 return original;
             });

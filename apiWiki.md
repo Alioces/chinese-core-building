@@ -11,6 +11,7 @@
 - **方块只声明能力**（通过接口），不关心"谁来消费"
 - **客户端统一扫描接口**，自动注册渲染器 / 模型后处理 / 渲染层
 - **新增能力 = 新增接口 + 新增消费方**，不改既有代码
+- **非渲染能力接口**（如 `PlacementBehavior`）归于 `util` 包，确保 `model` 包职责内聚
 
 ```
 Block (实现接口)          Client (扫描接口)       实际效果
@@ -21,6 +22,7 @@ Offset ─────────────────► OffsetBakedModel  
 Layered ─────────────────► BlockRenderLayerMap    自动绑定 CUTOUT/TRANSLUCENT
 SignTextProvider ───────► TextBakedModel          模型烘焙时追加文字层顶点
 Interactive ────────────► UseBlockCallback       客户端右键打开 GUI
+PlacementBehavior ─────► CustomBlock             服务端放置自动设置朝向/旋转
 ```
 
 ---
@@ -42,9 +44,11 @@ Block (Minecraft)
   │     │        │              │
   │     │        │              └── 特化为 4 方向 (FACING)
   │     │        │                   覆盖 getRotationAngle()
+  │     │        │                   覆盖 onPlace() → with(FACING, ...)
   │     │        │
   │     │        └── 通用旋转 (ROTATION 0~15)
   │     │            getRotationAngle() 每档 22.5°
+  │     │            onPlace() → with(ROTATION, ...)
   │     │
   │     └── Offset             (独立，可与 Rotatable/Directional 共存)
   │           └── getOffset(BlockState) → {dx, dy, dz}
@@ -63,6 +67,12 @@ Block (Minecraft)
   │
   └── OffsetFunction     (函数式接口，供构造函数传递偏移配置)
         └── getOffset() → {offsetXZ, offsetY}
+
+util 包（非模型能力，通用挂钩）：
+
+  PlacementBehavior   (放置状态后处理契约)
+    ├── Rotatable 实现 → onPlace() 设置 ROTATION
+    └── Directional 覆盖 → onPlace() 设置 FACING
 ```
 
 ### 典型组合
@@ -86,9 +96,11 @@ Block (Minecraft)
 | 项目 | 说明 |
 |------|------|
 | **用途** | 声明方块支持任意角度旋转（0~15 档，每档 22.5°） |
+| **继承** | `extends ModelWorldTransformer, PlacementBehavior` |
 | **依赖** | 无（可独立使用） |
 | **BlockState 属性** | `ROTATION: IntProperty`（Minecraft 内置 `Properties.ROTATION`） |
 | **客户端消费方** | `RotationBakedModel` |
+| **服务端消费方** | `CustomBlock.getPlacementState()` 通过 `PlacementBehavior.onPlace()` 自动设置旋转 |
 | **构造要求** | `setDefaultState(initRotation(getDefaultState()))` |
 | **appendProperties** | 必须显式调用 `Rotatable.super.appendProperties(builder)` |
 
@@ -99,6 +111,7 @@ Block (Minecraft)
 | `initRotation(BlockState)` | 默认 ROTATION=0 |
 | `calculateRotation(int)` | 默认原值返回，可自定义旋转值映射 |
 | `getRotationAngle(BlockState)` | 从 ROTATION 属性计算弧度角（每档 22.5°） |
+| `onPlace(BlockState, ItemPlacementContext)` | 实现 PlacementBehavior，放置时自动设置 ROTATION |
 | `getOutlineShape(...)` / `getCollisionShape(...)` | 默认 fullCube，可自定义 |
 
 ---
@@ -108,11 +121,12 @@ Block (Minecraft)
 | 项目 | 说明 |
 |------|------|
 | **用途** | 声明方块支持 4 方向水平朝向（north/east/south/west） |
-| **继承** | `extends Rotatable` |
+| **继承** | `extends Rotatable`（间接继承 `PlacementBehavior`） |
 | **依赖** | 无（可独立使用） |
 | **BlockState 属性** | `FACING: DirectionProperty`（Minecraft 内置 `Properties.HORIZONTAL_FACING`） |
-| **覆盖** | 用 FACING 替代 ROTATION；每方向 90° 增量 |
+| **覆盖** | 用 FACING 替代 ROTATION；重写 `onPlace()` 使用 FACING；每方向 90° 增量 |
 | **客户端消费方** | `RotationBakedModel`（通过父接口的 `getRotationAngle`） |
+| **服务端消费方** | `CustomBlock.getPlacementState()` 通过 `PlacementBehavior.onPlace()` 自动设置朝向 |
 | **构造要求** | `setDefaultState(initDirection(getDefaultState()))` |
 | **appendProperties** | 必须显式调用 `Directional.super.appendProperties(builder)` |
 
@@ -124,6 +138,7 @@ Block (Minecraft)
 | `directionToRotation(Direction)` | SOUTH→0, EAST→1, NORTH→2, WEST→3 |
 | `getRotationAngle(BlockState)` | 重写 Rotatable：从 FACING 算弧度（每方向 90°） |
 | `calculateDirection(ItemPlacementContext)` | 默认取玩家水平朝向 |
+| `onPlace(BlockState, ItemPlacementContext)` | 重写 Rotatable：使用 FACING 替代 ROTATION |
 | `getOutlineShape(...)` / `getCollisionShape(...)` | 默认 fullCube，可自定义 per-direction |
 
 **getRotationAngle 计算示例**：
@@ -353,6 +368,33 @@ public class MySignBlock extends CustomBlock implements Interactive {
 | 方法 | 返回值 |
 |------|--------|
 | `getOffset()` | `{offsetXZ, offsetY}`（长度为 2） |
+
+---
+
+### 3.9 PlacementBehavior（放置行为挂钩）
+
+| 项目 | 说明 |
+|------|------|
+| **用途** | 定义方块放置时的状态后处理契约，无需子类重复覆盖 `getPlacementState` |
+| **位置** | `util` 包 —— 纯工具接口，不涉及方块模型渲染能力 |
+| **继承关系** | `Rotatable extends PlacementBehavior` → `Directional extends Rotatable` |
+| **消费方** | `CustomBlock.getPlacementState()` 通过 `instanceof` 分派调用 |
+| **核心方法** | `onPlace(BlockState baseState, ItemPlacementContext ctx)` |
+
+**分派流程**：
+```
+CustomBlock.getPlacementState(ctx)
+  → super.getPlacementState(ctx)          // Block.getDefaultState()
+  → if (this instanceof PlacementBehavior)
+      → behavior.onPlace(state, ctx)
+          ├─ Rotatable.onPlace  → state.with(ROTATION, ...)
+          └─ Directional.onPlace → state.with(FACING, ...)
+```
+
+**设计理由**：
+由于 Java 类方法优先于接口 default 方法，`Block.getPlacementState()` 永远优先。
+因此采用独立命名的 `onPlace()` 挂钩 + `CustomBlock` 显式分派，
+每个实现类仅需 `implements Rotatable` / `implements Directional` 即可自动获得放置行为。
 
 ---
 

@@ -10,6 +10,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -42,6 +44,11 @@ import java.util.function.Supplier;
  * @see Rotatable
  */
 public class RotationBakedModel extends ForwardingBakedModel {
+
+    /**
+     * 日志记录器，用于诊断变换阶段是否被跳过。
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger("RotationBakedModel");
 
     /**
      * 方块中心坐标（旋转中心）。
@@ -87,9 +94,11 @@ public class RotationBakedModel extends ForwardingBakedModel {
     public void emitBlockQuads(BlockRenderView blockView, BlockState state, BlockPos pos,
                                Supplier<Random> randomSupplier, RenderContext context) {
         float angle = 0;
+        boolean isRotatable = false;
 
         if (state != null && blockView.getBlockState(pos).getBlock() instanceof Rotatable rotatable) {
             angle = rotatable.getRotationAngle(state);
+            isRotatable = true;
         }
 
         final float cos = (float) Math.cos(angle);
@@ -109,6 +118,8 @@ public class RotationBakedModel extends ForwardingBakedModel {
             return true;
         });
 
+        LOGGER.info("[emitBlockQuads] pos={}, state={}, isRotatable={}, angle={}rad({}°)",
+                pos, state, isRotatable, angle, Math.toDegrees(angle));
         super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
         context.popTransform();
     }

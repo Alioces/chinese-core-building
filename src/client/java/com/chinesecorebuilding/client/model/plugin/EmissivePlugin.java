@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.client.model.plugin;
 
+import com.chinesecorebuilding.block.properties.model.DynamicModelDecorator;
 import com.chinesecorebuilding.block.properties.model.LightEmissive;
 import com.chinesecorebuilding.client.model.ModelBakePlugin;
 import com.chinesecorebuilding.util.BakeContext;
@@ -77,9 +78,14 @@ public class EmissivePlugin implements ModelBakePlugin {
         LightEmissive provider = (LightEmissive) block;
         EmissiveHandler handler = provider.getEmissiveHandler();
 
-        // 获取发光等级并设置
+        // 立即求值：生成 defaultState 对应的发光等级（静态路径使用）
         int emissiveLevel = handler.handle(context.state());
         context.spec().setEmissiveLevel(emissiveLevel);
+
+        // 延迟求值：仅当方块声明为动态装饰器时存储 handler
+        if (block instanceof DynamicModelDecorator) {
+            context.spec().registerDeferredEmissiveHandler(handler);
+        }
 
         return context.spec();
     }

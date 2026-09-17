@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.block.properties.model;
 
+import com.chinesecorebuilding.util.PlacementBehavior;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
@@ -141,6 +142,23 @@ public interface Directional extends Rotatable {
      */
     default Direction calculateDirection(ItemPlacementContext ctx) {
         return ctx.getHorizontalPlayerFacing();
+    }
+
+    /**
+     * 放置时根据玩家朝向自动设置 FACING 属性。
+     * <p>
+     * {@link PlacementBehavior#onPlace} 的实现，
+     * 由 {@link com.chinesecorebuilding.block.CustomBlock#getPlacementState} 自动分派。
+     * 子类只需 {@code implements Directional} 即可获得此行为，无需覆盖任何方法。
+     * </p>
+     *
+     * @param baseState 父类的初始放置状态
+     * @param ctx       物品放置上下文，包含玩家朝向等信息
+     * @return 附加了 FACING 属性的方块状态
+     */
+    @Override
+    default BlockState onPlace(BlockState baseState, ItemPlacementContext ctx) {
+        return baseState.with(FACING, calculateDirection(ctx));
     }
 
     /**

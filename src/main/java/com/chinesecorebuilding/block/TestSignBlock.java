@@ -16,7 +16,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.state.StateManager;
@@ -93,17 +92,6 @@ public class TestSignBlock extends CustomBlock
                 ).build()
         );
         ENTITY_TYPE = holder[0];
-    }
-
-    /**
-     * 放置时根据玩家朝向自动设置 FACING 属性。
-     *
-     * @param ctx 物品放置上下文
-     * @return 带有正确 FACING 的方块状态
-     */
-    @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return super.getPlacementState(ctx).with(FACING, calculateDirection(ctx));
     }
 
     /**

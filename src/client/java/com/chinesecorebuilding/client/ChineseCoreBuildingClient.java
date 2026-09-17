@@ -68,21 +68,23 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         ModelPluginRegistry.register(Phase.TRANSFORMER,
                 block -> block instanceof Offset, OffsetBakedModel::new);
 
-        // 3.5 注册模型烘焙插件链（必须在桥接之前！）
+        // 3.5 注册模型烘焙插件链（必须在 bakeChain 调用之前！）
         //     将 5 个 ModelBakePlugin 注册到 plugins 列表中，
         //     后续 registerBakeChainBridge 调用 bakeChain() 时才能遍历到这些插件
         ModelBakePluginRegistry.registerAll();
 
-        // 4. 统一注册到 Fabric 模型加载管线（先装饰后变换的顺序在此保证）
-        //     这些回调会先执行，返回可能被 Rotation/Offset 包装的模型
-        ModelPluginRegistry.registerAll();
-
-        // 5. 模型烘焙插件链桥接 — 连接 ModelBakePluginRegistry → Fabric 管线
-        //     ★ 必须在 registerAll() 之后注册！
-        //     Fabric 的 modifyModelAfterBake 回调按注册顺序链式执行，
-        //     后注册的回调接收前一个的结果。如果先注册会被后续回调覆盖。
-        //     在这里最后注册，确保 SubModelBakedModel 成为最外层包装器。
+        // 4. 模型烘焙插件链桥接 — 连接 ModelBakePluginRegistry → Fabric 管线
+        //    必须在 registerAll() 之前注册！
+        //    Fabric 的 modifyModelAfterBake 回调按注册顺序链式执行（先注册 = 内层），
+        //    SubModelBakedModel 作为 DECORATOR（往模型里加东西），必须在变换层内侧。
+        //    先注册 → 内层 → 变换层（Rotation/Offset）在最外层包裹，子模型随父模型一起旋转。
+        //    包装顺序：Offset(Rotation(Text(SubModel(原模型))))
         ModelPluginRegistry.registerBakeChainBridge();
+
+        // 5. 统一注册 DECORATOR 和 TRANSFORMER 到 Fabric 模型加载管线
+        //    注册顺序：DECORATOR(Text) → TRANSFORMER(Rotation) → TRANSFORMER(Offset)
+        //    后注册 = 外包装层，变换层作用在装饰层的输出之上
+        ModelPluginRegistry.registerAll();
 
         // 6. BlockEntityRenderer：SignBlockEntity 使用 SignBlockRenderer 渲染文字
         //    文字渲染在独立的 BlockEntityRenderer 管线里，与 BakedModel 管线解耦，

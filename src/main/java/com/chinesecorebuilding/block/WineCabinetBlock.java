@@ -9,7 +9,9 @@ import com.chinesecorebuilding.util.handler.EmissiveHandler;
 import com.chinesecorebuilding.util.handler.SubModelHandler;
 import com.chinesecorebuilding.util.handler.TextureOverrideHandler;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Vec3d;
 
@@ -69,9 +71,13 @@ public class WineCabinetBlock extends CustomBlock
 
     /**
      * 创建酒柜方块（使用默认设置）。
+     * <p>
+     * nonOpaque() 确保相邻方块不剔除共享面，
+     * 与 BlockRenderLayerMap 配合实现完整的透明渲染。
+     * </p>
      */
     public WineCabinetBlock() {
-        this(FabricBlockSettings.create().strength(1.0f));
+        this(FabricBlockSettings.create().strength(1.0f).nonOpaque());
     }
 
     // ==================== SubModelProvider 实现 ====================
@@ -158,22 +164,29 @@ public class WineCabinetBlock extends CustomBlock
 
     /**
      * 注册方块属性。
+     * <p>
+     * 委托给 {@link Directional#appendProperties} 注册 FACING 属性。
+     * </p>
      *
      * @param builder 属性构建器
      */
     @Override
-    public void appendProperties(net.minecraft.state.StateManager.Builder<net.minecraft.block.Block, BlockState> builder) {
+    public void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(Properties.HORIZONTAL_FACING);
+        Directional.super.appendProperties(builder);
     }
 
     /**
-     * 声明路标使用 CUTOUT 渲染层，支持板面透明区域。
+     * 声明酒柜使用 TRANSLUCENT 渲染层，支持玻璃透明效果。
+     * <p>
+     * TRANSLUCENT 层不会对相邻方块执行面剔除，
+     * 确保玻璃方块在叠放时所有面都能正确显示。
+     * </p>
      *
-     * @return {@link RenderLayerType#CUTOUT}
+     * @return {@link RenderLayerType#TRANSLUCENT}
      */
     @Override
     public RenderLayerType getRenderLayerType() {
-        return RenderLayerType.CUTOUT;
+        return RenderLayerType.TRANSLUCENT;
     }
 }

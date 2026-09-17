@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.client.model.plugin;
 
+import com.chinesecorebuilding.block.properties.model.DynamicModelDecorator;
 import com.chinesecorebuilding.block.properties.model.SubModelProvider;
 import com.chinesecorebuilding.client.model.ModelBakePlugin;
 import com.chinesecorebuilding.util.AnchorPoint;
@@ -88,12 +89,17 @@ public class SubModelComposerPlugin implements ModelBakePlugin {
         SubModelHandler handler = provider.getSubModelHandler();
         List<AnchorPoint> anchors = provider.getAnchors();
 
-        // 遍历所有锚点，添加子模型
+        // 立即求值：遍历所有锚点，生成 defaultState 对应的子模型（静态路径使用）
         for (AnchorPoint anchor : anchors) {
             String modelId = handler.handle(anchor, context.state());
             if (modelId != null && !modelId.isEmpty()) {
                 context.spec().addSubModel(modelId, anchor.transform());
             }
+        }
+
+        // 延迟求值：仅当方块声明为动态装饰器时存储 handler + anchors
+        if (block instanceof DynamicModelDecorator) {
+            context.spec().registerDeferredSubModelHandler(handler, anchors);
         }
 
         return context.spec();

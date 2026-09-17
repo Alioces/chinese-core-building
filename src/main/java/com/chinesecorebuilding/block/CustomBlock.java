@@ -2,9 +2,11 @@ package com.chinesecorebuilding.block;
 
 import com.chinesecorebuilding.block.properties.Interactive;
 import com.chinesecorebuilding.block.roadSigns.RoadSignsBlock;
+import com.chinesecorebuilding.util.PlacementBehavior;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -77,5 +79,30 @@ public class CustomBlock extends Block {
         }
         // 非 Interactive 或显式关闭了阻断 → 走原版逻辑（通常返回 PASS 让放置继续）
         return super.onUse(state, world, pos, player, hand, hit);
+    }
+
+    /**
+     * 统一分发放置行为。
+     * <p>
+     * 调用 {@code super.getPlacementState(ctx)} 获取原版初始状态后，
+     * 遍历实现的 {@link PlacementBehavior} 接口进行后处理。
+     * 每个 PlacementBehavior（如 {@code Directional}）仅需在接口中提供 default 实现，
+     * 无需子类重复覆盖样板代码。
+     * </p>
+     * <p>
+     * 与 {@link #onUse} 对 {@link Interactive} 的分派模式一致，
+     * 遵循单一职责：CustomBlock 仅负责分派，具体逻辑归接口所有。
+     * </p>
+     *
+     * @param ctx 物品放置上下文，包含玩家朝向等信息
+     * @return 经过所有 PlacementBehavior 后处理后的方块状态
+     */
+    @Override
+    public BlockState getPlacementState(ItemPlacementContext ctx) {
+        BlockState state = super.getPlacementState(ctx);
+        if (this instanceof PlacementBehavior behavior) {
+            state = behavior.onPlace(state, ctx);
+        }
+        return state;
     }
 }
