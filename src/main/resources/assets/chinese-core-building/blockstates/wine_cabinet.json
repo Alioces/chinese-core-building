@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "chinese-core-building:block/wine_cabinet" },
+    "facing=south": { "model": "chinese-core-building:block/wine_cabinet", "y": 180 },
+    "facing=east":  { "model": "chinese-core-building:block/wine_cabinet", "y": 90 },
+    "facing=west":  { "model": "chinese-core-building:block/wine_cabinet", "y": 270 }
+  }
+}

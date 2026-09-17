@@ -1,10 +1,15 @@
 package com.chinesecorebuilding.client.model;
 
+import com.chinesecorebuilding.block.properties.model.ModelBakeDecorator;
+import com.chinesecorebuilding.client.model.postProcessing.SubModelBakedModel;
+import com.chinesecorebuilding.util.BakedModelSpec;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.block.Block;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +42,11 @@ import java.util.function.Predicate;
  * @see ModelWorldTransformer
  */
 public final class ModelPluginRegistry {
+
+    /**
+     * SLF4J 日志记录器，用于输出子模型调试信息。
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger("SubModel");
 
     /**
      * 插件条目。
@@ -127,6 +137,77 @@ public final class ModelPluginRegistry {
     }
 
     /**
+     * 注册模型烘焙插件链桥接（ModelBakePluginRegistry → Fabric 管线）。
+     * <p>
+     * 解决两套注册体系独立运行导致的断路问题：
+     * {@link ModelBakePluginRegistry#bakeChain} 生成 {@link BakedModelSpec}
+     * （含子模型、贴图覆盖、发光等级等），但从未连接到 Fabric 渲染管线。
+     * </p>
+     * <p>
+     * 桥接逻辑：
+     * <ol>
+     *   <li>检测方块是否实现 {@link ModelBakeDecorator}</li>
+     *   <li>调用 bakeChain 执行所有已注册插件，生成最终 BakedModelSpec</li>
+     *   <li>若 BakedModelSpec 包含子模型，用 {@link SubModelBakedModel} 包装</li>
+     * </ol>
+     * </p>
+     * <p>
+     * <b>注册顺序：</b>此桥接必须早于 {@link #registerAll()} 注册，
+     * 确保 SubModelBakedModel 在 DECORATOR 插件链最内侧，
+     * 使子模型顶点先于旋转/偏移变换处理。
+     * </p>
+     *
+     * @see ModelBakePluginRegistry
+     * @see SubModelBakedModel
+     * @see BakedModelSpec
+     */
+    public static void registerBakeChainBridge() {
+        ModelLoadingPlugin.register(pluginContext -> {
+            pluginContext.modifyModelAfterBake().register((original, context) -> {
+                // 从模型 ID 反查方块实例
+                Block block = resolveBlock(context.id());
+                if (block == null) {
+                    return original;
+                }
+
+                // 只有实现了 ModelBakeDecorator 的方块才走烘焙链
+                if (!(block instanceof ModelBakeDecorator)) {
+                    return original;
+                }
+
+                LOGGER.info("检测到 ModelBakeDecorator 方块: {} (modelId={})",
+                    block.getClass().getSimpleName(), context.id());
+
+                // 执行烘焙链：遍历所有 ModelBakePlugin，
+                // 生成包含子模型、贴图覆盖、发光等级等的 BakedModelSpec
+                BakedModelSpec spec = ModelBakePluginRegistry.bakeChain(
+                    block,
+                    block.getDefaultState(),
+                    new BakedModelSpec(context.id())
+                );
+
+                LOGGER.info("bakeChain 完成, 子模型数量: {}", spec.getSubModels().size());
+
+                BakedModel result = original;
+
+                // 若有子模型，用 SubModelBakedModel 包装
+                if (!spec.getSubModels().isEmpty()) {
+                    result = new SubModelBakedModel(result, spec.getSubModels());
+                    LOGGER.info("创建 SubModelBakedModel 包装器 ✅");
+                } else {
+                    LOGGER.info("无子模型，返回原始模型");
+                }
+
+                // TODO: 后续扩展 — 发光包装器 (EmissiveBakedModel)
+                // TODO: 后续扩展 — 动画包装器 (AnimatedBakedModel)
+                // TODO: 后续扩展 — 贴图覆盖包装器 (DynamicTextureBakedModel)
+
+                return result;
+            });
+        });
+    }
+
+    /**
      * 将单个插件包装为 Fabric 能识别的 ModelLoadingPlugin。
      * <p>
      * 核心流程：监听模型烘焙后的回调 → 从模型 ID 反查方块 → matcher 匹配则 apply wrapper。
@@ -158,7 +239,7 @@ public final class ModelPluginRegistry {
      * @param modelId 模型 ID（格式 {@code namespace:block/block_name}）
      * @return 对应的方块实例，若非方块模型或不存在则返回 null
      */
-    private static Block resolveBlock(Identifier modelId) {
+    static Block resolveBlock(Identifier modelId) {
         // 非方块模型（如 item/xxx）直接跳过，方块插件不处理
         if (!modelId.getPath().startsWith("block/")) return null;
         // 去掉 "block/" 前缀，得到方块名

@@ -7,6 +7,7 @@ import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
 import com.chinesecorebuilding.client.gui.SignBlockScreen;
+import com.chinesecorebuilding.client.model.ModelBakePluginRegistry;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry.Phase;
 import com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel;
@@ -67,15 +68,28 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         ModelPluginRegistry.register(Phase.TRANSFORMER,
                 block -> block instanceof Offset, OffsetBakedModel::new);
 
+        // 3.5 注册模型烘焙插件链（必须在桥接之前！）
+        //     将 5 个 ModelBakePlugin 注册到 plugins 列表中，
+        //     后续 registerBakeChainBridge 调用 bakeChain() 时才能遍历到这些插件
+        ModelBakePluginRegistry.registerAll();
+
         // 4. 统一注册到 Fabric 模型加载管线（先装饰后变换的顺序在此保证）
+        //     这些回调会先执行，返回可能被 Rotation/Offset 包装的模型
         ModelPluginRegistry.registerAll();
 
-        // 5. BlockEntityRenderer：SignBlockEntity 使用 SignBlockRenderer 渲染文字
+        // 5. 模型烘焙插件链桥接 — 连接 ModelBakePluginRegistry → Fabric 管线
+        //     ★ 必须在 registerAll() 之后注册！
+        //     Fabric 的 modifyModelAfterBake 回调按注册顺序链式执行，
+        //     后注册的回调接收前一个的结果。如果先注册会被后续回调覆盖。
+        //     在这里最后注册，确保 SubModelBakedModel 成为最外层包装器。
+        ModelPluginRegistry.registerBakeChainBridge();
+
+        // 6. BlockEntityRenderer：SignBlockEntity 使用 SignBlockRenderer 渲染文字
         //    文字渲染在独立的 BlockEntityRenderer 管线里，与 BakedModel 管线解耦，
         //    但 SignBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
         BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, SignBlockRenderer::new);
 
-        // 6. 交互回调：客户端右键方块时检测 GuiInteractive
+        // 7. 交互回调：客户端右键方块时检测 GuiInteractive
         //    检查前置条件后打开 SignBlockScreen 编辑器。不在 main 源集引用 client 类，
         //    保持 main → client 的单向依赖。
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {

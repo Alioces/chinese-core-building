@@ -1,6 +1,8 @@
 package com.chinesecorebuilding.util;
 
+import com.chinesecorebuilding.util.handler.AnimationHandler;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +46,16 @@ public class BakedModelSpec {
      * 发光等级（0~15）。
      */
     private int emissiveLevel = 0;
+
+    /**
+     * 动画处理器（用于运行时动态变换）。
+     */
+    private AnimationHandler animationHandler;
+
+    /**
+     * 连接的多方块部分位置列表。
+     */
+    private List<BlockPos> connectedParts = new ArrayList<>();
 
     /**
      * 创建烘焙模型规格。
@@ -102,6 +114,42 @@ public class BakedModelSpec {
     }
 
     /**
+     * 注册动画处理器。
+     *
+     * @param handler 动画处理器实例
+     */
+    public void registerAnimationHandler(AnimationHandler handler) {
+        this.animationHandler = handler;
+    }
+
+    /**
+     * 获取动画处理器。
+     *
+     * @return 动画处理器实例，如果未注册则返回 null
+     */
+    public AnimationHandler getAnimationHandler() {
+        return animationHandler;
+    }
+
+    /**
+     * 设置连接的多方块部分位置列表。
+     *
+     * @param parts 多方块部分位置列表
+     */
+    public void setConnectedParts(List<BlockPos> parts) {
+        this.connectedParts = parts != null ? parts : new ArrayList<>();
+    }
+
+    /**
+     * 获取连接的多方块部分位置列表。
+     *
+     * @return 多方块部分位置列表
+     */
+    public List<BlockPos> getConnectedParts() {
+        return connectedParts;
+    }
+
+    /**
      * 获取基础模型 ID。
      *
      * @return 基础模型 ID
@@ -139,6 +187,11 @@ public class BakedModelSpec {
 
     /**
      * 子模型条目。
+     * <p>
+     * 存储子模型的 ID 和变换信息。
+     * 注意：BakedModel 的实际解析应在烘焙阶段完成，
+     * 而不是延迟到渲染时动态调用 getModel()。
+     * </p>
      *
      * @param modelId   子模型 ID
      * @param transform 变换矩阵

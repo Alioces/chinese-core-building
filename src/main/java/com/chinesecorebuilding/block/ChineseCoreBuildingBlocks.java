@@ -195,6 +195,11 @@ public class ChineseCoreBuildingBlocks {
     /** 减速让行标志 */
     public static final Block yield = register("yield", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 
+    // ==================== 测试方块 ====================
+
+    /** 酒柜测试方块（验证插件链） */
+    public static final Block wine_cabinet = register("wine_cabinet", new WineCabinetBlock());
+
     /**
      * 统一注册方块及其对应的方块物品。
      * <p>

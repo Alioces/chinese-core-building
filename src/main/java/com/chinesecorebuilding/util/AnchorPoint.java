@@ -61,36 +61,4 @@ public record AnchorPoint(
     public Transform transform() {
         return new Transform(position, rotation, scale);
     }
-
-    // ==================== 预定义锚点常量 ====================
-
-    /**
-     * 酒瓶槽位 1（左侧）。
-     */
-    public static final AnchorPoint BOTTLE_SLOT_1 = new AnchorPoint(
-        "bottle_slot_1",
-        new Vec3d(0.25, 0.3, 0.5),
-        Vec3d.ZERO,
-        0.5f
-    );
-
-    /**
-     * 酒瓶槽位 2（中间）。
-     */
-    public static final AnchorPoint BOTTLE_SLOT_2 = new AnchorPoint(
-        "bottle_slot_2",
-        new Vec3d(0.5, 0.3, 0.5),
-        Vec3d.ZERO,
-        0.5f
-    );
-
-    /**
-     * 酒瓶槽位 3（右侧）。
-     */
-    public static final AnchorPoint BOTTLE_SLOT_3 = new AnchorPoint(
-        "bottle_slot_3",
-        new Vec3d(0.75, 0.3, 0.5),
-        Vec3d.ZERO,
-        0.5f
-    );
 }

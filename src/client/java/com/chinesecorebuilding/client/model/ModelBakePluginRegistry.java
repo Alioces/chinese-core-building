@@ -1,5 +1,10 @@
 package com.chinesecorebuilding.client.model;
 
+import com.chinesecorebuilding.client.model.plugin.AnimationControllerPlugin;
+import com.chinesecorebuilding.client.model.plugin.DynamicTexturePlugin;
+import com.chinesecorebuilding.client.model.plugin.EmissivePlugin;
+import com.chinesecorebuilding.client.model.plugin.MultiBlockCoordinatorPlugin;
+import com.chinesecorebuilding.client.model.plugin.SubModelComposerPlugin;
 import com.chinesecorebuilding.util.BakeContext;
 import com.chinesecorebuilding.util.BakedModelSpec;
 import com.chinesecorebuilding.block.properties.model.ModelBakeDecorator;
@@ -7,6 +12,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,6 +59,11 @@ public final class ModelBakePluginRegistry {
     private static final List<ModelBakePlugin> plugins = new ArrayList<>();
 
     /**
+     * SLF4J 日志记录器，用于输出子模型调试信息。
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger("SubModel");
+
+    /**
      * 注册插件（自动按优先级排序）。
      * <p>
      * 插件注册后会自动插入到列表中的正确位置，
@@ -84,12 +96,25 @@ public final class ModelBakePluginRegistry {
             return baseSpec;
         }
 
+        LOGGER.info("bakeChain 开始执行, 已注册插件数: {}", plugins.size());
+
         BakedModelSpec current = baseSpec;
         BakeContext context = new BakeContext(block, state, current);
 
-        for (ModelBakePlugin plugin : plugins) {
-            if (plugin.accepts(block)) {
+        for (int i = 0; i < plugins.size(); i++) {
+            ModelBakePlugin plugin = plugins.get(i);
+            boolean accepts = plugin.accepts(block);
+            LOGGER.info("插件 {}/{}: {} (priority={}) → {}",
+                (i + 1), plugins.size(),
+                plugin.getClass().getSimpleName(),
+                plugin.getPriority(),
+                accepts ? "✅接受" : "⏭️跳过");
+
+            if (accepts) {
+                int beforeSize = current.getSubModels().size();
                 current = plugin.bake(context);
+                int afterSize = current.getSubModels().size();
+                LOGGER.info("  执行完成, 子模型: {} → {}", beforeSize, afterSize);
                 // 更新上下文中的规格
                 context = new BakeContext(block, state, current);
             }
@@ -111,21 +136,18 @@ public final class ModelBakePluginRegistry {
      *   <li>MultiBlockCoordinatorPlugin (100)：多方块协调</li>
      * </ol>
      * </p>
-     *
-     * @implNote 此方法在阶段二实现具体插件后启用
      */
     public static void registerAll() {
-        // TODO: 阶段二实现插件后取消注释
         // 基础模型处理（优先级最高）
-        // register(new SubModelComposerPlugin());
-        // register(new DynamicTexturePlugin());
+        register(new SubModelComposerPlugin());
+        register(new DynamicTexturePlugin());
 
         // 动画和动态效果
-        // register(new AnimationControllerPlugin());
-        // register(new EmissivePlugin());
+        register(new AnimationControllerPlugin());
+        register(new EmissivePlugin());
 
         // 多方块协调
-        // register(new MultiBlockCoordinatorPlugin());
+        register(new MultiBlockCoordinatorPlugin());
     }
 
     /**
