@@ -19,7 +19,11 @@ import java.util.List;
  * 继承 {@link CustomBlockEntity} 统一基类，自动拥有 markModified + 客户端同步能力。
  * </p>
  * <p>
- * 继承层次：BlockEntity → ModBlockEntity（统一基类） → SignBlockEntity。
+ * 本类是公共文字功能基础设施的数据存储核心，任何实现 {@link SignTextProvider} 的方块
+ * 都可以使用此类作为其 BlockEntity，获得完整的文字存储和管理能力。
+ * </p>
+ * <p>
+ * 继承层次：BlockEntity → CustomBlockEntity（统一基类） → TextBlockEntity。
  * </p>
  * <p>
  * 修改-标记-同步机制：本类所有修改方法都会自动调用 {@link CustomBlockEntity#markModified()}，
@@ -27,6 +31,7 @@ import java.util.List;
  * </p>
  *
  * @see TextLine
+ * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
  */
 public class TextBlockEntity extends CustomBlockEntity {
 

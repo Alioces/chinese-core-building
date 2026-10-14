@@ -94,7 +94,7 @@ src/
 |------|--------|
 | 模型插件（*Plugin.java） | — |
 | BakedModel 实现（*BakedModel.java） | — |
-| Renderer（SignBlockRenderer） | — |
+| Renderer（TextBlockRenderer） | — | 文字层渲染器，公共文字功能基础设施的一部分 |
 | Screen / GUI | — |
 | datagen | — |
 
@@ -131,7 +131,7 @@ Block (Minecraft)
   │     ├── LightEmissive          → 状态驱动发光
   │     ├── AnimatableModel        → 运行时动画变换
   │     ├── MultiBlockCoordinator  → 多方块组合模型 (待消费方)
-  │     ├── SignTextProvider       → 文字层渲染 (需 +BlockEntityProvider)
+  │     ├── TextProvider       → 文字层渲染 (需 +BlockEntityProvider)
   │     └── DynamicModelDecorator  → 延迟求值标记 (静态/动态分流)
   │
   ├── ModelWorldTransformer (空标记, 变换阶段)
@@ -184,7 +184,7 @@ public class CustomBlock extends Block {
 ModelPluginRegistry.registerAll()
   │
   ├─ Phase.DECORATOR (先注册 → 内层)
-  │   └─ TextBakedModel ← SignTextProvider 方块
+  │   └─ TextBakedModel ← TextProvider 方块
   │
   ├─ registerBakeChainBridge() (在 DECORATOR 和 TRANSFORMER 之间)
   │   └─ SubModelBakedModel ← ModelBakeDecorator 方块
@@ -215,7 +215,7 @@ Offset(Rotation(Text(SubModel(原模型))))
 | `RotatableSignBlock` | `Rotatable` | 旋转 + 自定义形状 |
 | `RoadSignsBlock` | `Directional, Layered, Offset` | 4 方向 + CUTOUT 渲染 + 空间偏移 |
 | `WineCabinetBlock` | `Directional, SubModelProvider, StatefulTextureProvider, LightEmissive, AnimatableModel, Layered` | 全能力展示：子模型 + 动态贴图 + 发光 + 动画 |
-| `TestSignBlock` | `Directional, Layered, GuiInteractive, BlockEntityProvider, SignTextProvider` | 文字渲染 + GUI 交互 |
+| `TestSignBlock` | `Directional, Layered, GuiInteractive, BlockEntityProvider, TextProvider` | 文字渲染 + GUI 交互（公共文字功能参考实现） |
 
 ---
 

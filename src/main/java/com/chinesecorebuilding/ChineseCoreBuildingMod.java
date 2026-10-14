@@ -4,7 +4,7 @@ import com.chinesecorebuilding.block.ChineseCoreBuildingBlocks;
 import com.chinesecorebuilding.block.SingleLineSignBlock;
 import com.chinesecorebuilding.block.TestSignBlock;
 import com.chinesecorebuilding.group.ChineseCoreBuildingGroups;
-import com.chinesecorebuilding.network.SignBlockTextService;
+import com.chinesecorebuilding.network.TextBlockService;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class ChineseCoreBuildingMod implements ModInitializer {
         TestSignBlock.register();
         SingleLineSignBlock.register();
 
-        SignBlockTextService.registerReceiver();
+        TextBlockService.registerReceiver();
 
         LOGGER.info("Hello Fabric world!");
     }

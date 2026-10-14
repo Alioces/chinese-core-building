@@ -78,7 +78,7 @@
       │
       ├─ DECORATOR 层 (先注册 → 内层)
       │   ├─ SubModelBakedModel  ← BakedModelSpec 含 subModels + deferred handlers
-      │   └─ TextBakedModel      ← SignTextProvider
+      │   └─ TextBakedModel      ← TextProvider
       │
       └─ TRANSFORMER 层 (后注册 → 外层)
           ├─ RotationBakedModel  ← Rotatable / Directional

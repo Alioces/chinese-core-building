@@ -2,7 +2,7 @@ package com.chinesecorebuilding.client;
 
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
-import com.chinesecorebuilding.network.SignBlockTextPayload;
+import com.chinesecorebuilding.network.TextBlockPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
@@ -13,10 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 前端（客户端）路牌文字数据服务代理。
+ * 前端（客户端）文字方块数据服务代理。
  * <p>
  * 这是 Client 源集里唯一与网络层 / BlockEntity 打交道的类。
- * GUI（SignBlockScreen）只依赖本类的公开方法，不直接关心网络或持久化细节。
+ * GUI（TextBlockScreen / SingleLineScreen）只依赖本类的公开方法，
+ * 不直接关心网络或持久化细节。
  * </p>
  * <p>
  * 职责：
@@ -25,8 +26,13 @@ import java.util.List;
  *   <li>{@link #saveLines(BlockPos, List)} — 把编辑好的文字行发往服务端</li>
  * </ul>
  * </p>
+ * <p>
+ * 本模块是公共文字功能基础设施，任何实现 {@link SignTextProvider} 的方块
+ * 都可以复用此服务进行文字数据的读取和保存。
+ * </p>
  *
- * @see SignBlockTextPayload
+ * @see TextBlockPayload
+ * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
  */
 public final class SignBlockClientService {
 
@@ -34,12 +40,12 @@ public final class SignBlockClientService {
     private SignBlockClientService() {}
 
     /**
-     * 从客户端世界读取目标路牌的当前文字行。
+     * 从客户端世界读取目标方块的文字行。
      * <p>
      * 仅在客户端有世界（已进入存档）时有效；否则返回空列表。
      * </p>
      *
-     * @param pos 路牌方块位置
+     * @param pos 文字方块位置
      * @return 文字行列表的副本（可安全修改，不影响 BlockEntity 原始数据）
      */
     public static List<TextLine> readLines(BlockPos pos) {
@@ -52,16 +58,16 @@ public final class SignBlockClientService {
     /**
      * 将编辑好的文字行发往服务端持久化。
      * <p>
-     * 使用 {@link SignBlockTextPayload} 编码后通过 {@link ClientPlayNetworking} 发送。
-     * 服务端 {@link com.chinesecorebuilding.network.SignBlockTextService} 会解码并写入 BlockEntity。
+     * 使用 {@link TextBlockPayload} 编码后通过 {@link ClientPlayNetworking} 发送。
+     * 服务端 {@link SignBlockTextService} 会解码并写入 BlockEntity。
      * </p>
      *
-     * @param pos   目标路牌方块位置
+     * @param pos   目标文字方块位置
      * @param lines 要保存的完整文字行列表
      */
     public static void saveLines(BlockPos pos, List<TextLine> lines) {
         PacketByteBuf buf = PacketByteBufs.create();
-        SignBlockTextPayload.encode(buf, pos, lines);
-        ClientPlayNetworking.send(SignBlockTextPayload.ID, buf);
+        TextBlockPayload.encode(buf, pos, lines);
+        ClientPlayNetworking.send(TextBlockPayload.ID, buf);
     }
 }

@@ -17,15 +17,20 @@ import java.util.List;
  * <p>
  * 本类只负责传输层职责：把 BlockPos + List(TextLine) 序列化为 ByteBuf，
  * 或从 ByteBuf 反序列化回来。不涉及任何业务逻辑（如写入 BlockEntity），
- * 业务逻辑由 {@link SignBlockTextService} 负责。
+ * 业务逻辑由 {@link TextBlockService} 负责。
+ * </p>
+ * <p>
+ * 本模块是公共文字功能基础设施，任何实现 {@link SignTextProvider} 的方块
+ * 都可以复用此 Payload 进行文字数据的网络传输。
  * </p>
  * <p>
  * 数据格式：BlockPos → NbtCompound { Lines: NbtList(TextLine NBT) }
  * </p>
  *
- * @see SignBlockTextService
+ * @see TextBlockService
+ * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
  */
-public final class SignBlockTextPayload {
+public final class TextBlockPayload {
 
     /**
      * 网络 Payload 标识符。
@@ -37,13 +42,13 @@ public final class SignBlockTextPayload {
     public static final Identifier ID = ChineseCoreBuildingMod.id("sign_text");
 
     /** 工具类不允许实例化 */
-    private SignBlockTextPayload() {}
+    private TextBlockPayload() {}
 
     /**
      * 客户端侧：将目标坐标 + 文字行列表写入 ByteBuf。
      *
      * @param buf   待写入的字节缓冲区
-     * @param pos   目标路牌方块位置
+     * @param pos   目标文字方块位置
      * @param lines 待保存的文字行列表
      */
     public static void encode(PacketByteBuf buf, BlockPos pos, List<TextLine> lines) {
@@ -60,7 +65,7 @@ public final class SignBlockTextPayload {
     /**
      * 服务端侧：从 ByteBuf 解码出目标坐标 + 文字行列表。
      * <p>
-     * 返回的 DTO 交给 {@link SignBlockTextService} 执行业务写入。
+     * 返回的 DTO 交给 {@link TextBlockService} 执行业务写入。
      * </p>
      *
      * @param buf 待解码的字节缓冲区
@@ -82,7 +87,7 @@ public final class SignBlockTextPayload {
     /**
      * 解码结果 DTO，承载坐标和文字行列表。
      *
-     * @param pos   目标路牌方块位置
+     * @param pos   目标文字方块位置
      * @param lines 解码得到的文字行列表
      */
     public record Decoded(BlockPos pos, List<TextLine> lines) {}

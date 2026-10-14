@@ -6,10 +6,14 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * 单行文字数据记录。
+ * 文字行数据记录。
  * <p>
  * 每个实例携带：文字内容、独立位置、独立颜色、独立缩放、发光状态，
  * 以及一个预留扩展容器 {@link #extra} 用于未来功能扩展。
+ * </p>
+ * <p>
+ * 本类是公共文字功能基础设施的数据模型，用于表示方块上可渲染的单行文字。
+ * 任何实现 {@link SignTextProvider} 的方块都可以使用此类来存储和管理文字数据。
  * </p>
  * <p>
  * 使用 record 保证不可变性，任何修改通过 {@code withXxx()} 返回新实例，
@@ -28,6 +32,7 @@ import net.minecraft.util.math.Vec3d;
  * </p>
  *
  * @see TextBlockEntity
+ * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
  */
 public record TextLine(
         Text text,

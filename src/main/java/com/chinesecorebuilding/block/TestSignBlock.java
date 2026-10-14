@@ -25,10 +25,15 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
 /**
- * 独立测试方块，验证文字渲染、交互和 GUI 编辑。
+ * 文字方块测试实现。
  * <p>
+ * 验证公共文字功能基础设施的完整工作流程：文字渲染、交互和 GUI 编辑。
  * 纯 invisible 方块：fullCube 选中框，无碰撞，无实体模型，文字渲染完全由 SignBlockRenderer 负责。
  * 没有方向偏移、没有边界框位移——文字位置完全由 TextLine.position 字段决定。
+ * </p>
+ * <p>
+ * 本方块是公共文字功能的参考实现，展示了如何接入文字功能所需的全部接口。
+ * 其他需要文字功能的方块可以参考此类的实现方式。
  * </p>
  */
 public class TestSignBlock extends CustomBlock
@@ -39,6 +44,7 @@ public class TestSignBlock extends CustomBlock
      * 方块注册名。
      * <p>
      * 拼接 {@link ChineseCoreBuildingMod#MOD_ID} 得到完整注册 ID {@code chinese-core-building:test_sign}。
+     * 作为公共文字功能的测试方块，用于验证文字渲染、交互和 GUI 编辑的完整流程。
      * </p>
      */
     public static final String ID = "test_sign";
@@ -143,11 +149,11 @@ public class TestSignBlock extends CustomBlock
     }
 
     /**
-     * 创建 SignBlockEntity 实例，由 Minecraft 原版在方块被放置到世界时调用。
+     * 创建 TextBlockEntity 实例，由 Minecraft 原版在方块被放置到世界时调用。
      *
      * @param pos   方块位置
      * @param state 方块状态
-     * @return 新的 SignBlockEntity
+     * @return 新的 TextBlockEntity
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {

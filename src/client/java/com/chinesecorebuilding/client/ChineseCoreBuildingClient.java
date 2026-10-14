@@ -7,15 +7,15 @@ import com.chinesecorebuilding.block.properties.model.Layered;
 import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
-import com.chinesecorebuilding.client.gui.SignBlockScreen;
-import com.chinesecorebuilding.client.gui.SingleLineSignScreen;
+import com.chinesecorebuilding.client.gui.TextBlockScreen;
+import com.chinesecorebuilding.client.gui.SingleLineScreen;
 import com.chinesecorebuilding.client.model.ModelBakePluginRegistry;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry.Phase;
 import com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.RotationBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.TextBakedModel;
-import com.chinesecorebuilding.client.renderer.SignBlockRenderer;
+import com.chinesecorebuilding.client.renderer.TextBlockRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -38,6 +38,10 @@ import net.minecraft.util.math.BlockPos;
  * </ol>
  * 插件链从外到内：OffsetBakedModel → RotationBakedModel → TextBakedModel → 原始模型。
  * </p>
+ * <p>
+ * 本类负责注册公共文字功能基础设施的客户端组件，包括渲染器、GUI 路由、模型插件等。
+ * 任何实现 {@link SignTextProvider} 的方块都会自动获得文字渲染和 GUI 编辑能力。
+ * </p>
  */
 public class ChineseCoreBuildingClient implements ClientModInitializer {
 
@@ -50,8 +54,8 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
      *   <li>装饰阶段插件 — {@link SignTextProvider} → {@link TextBakedModel}</li>
      *   <li>变换阶段插件 — {@link Rotatable} → {@link RotationBakedModel} / {@link Offset} → {@link OffsetBakedModel}</li>
      *   <li>统一注册到 Fabric 模型加载管线（先装饰后变换的顺序在此保证）</li>
-     *   <li>BlockEntityRenderer — {@link TestSignBlock} 实体用 {@link SignBlockRenderer} 渲染文字</li>
-     *   <li>交互回调 — 监听 {@link UseBlockCallback} 打开 {@link SignBlockScreen}</li>
+     *   <li>BlockEntityRenderer — 文字方块实体用 {@link TextBlockRenderer} 渲染文字</li>
+     *   <li>交互回调 — 监听 {@link UseBlockCallback} 打开文字编辑 GUI</li>
      * </ol>
      * </p>
      */
@@ -88,13 +92,13 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         //    后注册 = 外包装层，变换层作用在装饰层的输出之上
         ModelPluginRegistry.registerAll();
 
-        // 6. BlockEntityRenderer：SignBlockEntity 使用 SignBlockRenderer 渲染文字
+        // 6. BlockEntityRenderer：文字方块实体使用 TextBlockRenderer 渲染文字
         //    文字渲染在独立的 BlockEntityRenderer 管线里，与 BakedModel 管线解耦，
-        //    但 SignBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
-        BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, SignBlockRenderer::new);
+        //    但 TextBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
+        BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
 
         // 7. 交互回调：客户端右键方块时检测 GuiInteractive
-        //    检查前置条件后打开对应的 GUI 编辑器。不在 main 源集引用 client 类，
+        //    检查前置条件后打开对应的文字编辑 GUI。不在 main 源集引用 client 类，
         //    保持 main → client 的单向依赖。
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!world.isClient) return ActionResult.PASS;   // 只在客户端处理
@@ -107,14 +111,14 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
             if (block instanceof GuiInteractive guiInteractive) {
                 // 前置条件检查
                 if (guiInteractive.canOpenGui(player, pos)) {
-                    // 根据方块类型选择对应的 GUI
+                    // 根据方块类型选择对应的文字编辑 GUI
                     net.minecraft.client.gui.screen.Screen screen;
                     if (block instanceof SingleLineSignBlock) {
-                        screen = new SingleLineSignScreen(pos);
+                        screen = new SingleLineScreen(pos);
                     } else if (block instanceof SignTextProvider) {
-                        screen = new SignBlockScreen(pos);
+                        screen = new TextBlockScreen(pos);
                     } else {
-                        screen = new SignBlockScreen(pos);
+                        screen = new TextBlockScreen(pos);
                     }
                     MinecraftClient.getInstance().setScreen(screen);
                     // 回调逻辑

@@ -20,9 +20,12 @@ Rotatable ──────────────► RotationBakedModel      
 Directional ────────────► RotationBakedModel      同上（从 FACING 算角度）
 Offset ─────────────────► OffsetBakedModel       模型烘焙时应用 3D 偏移
 Layered ─────────────────► BlockRenderLayerMap    自动绑定 CUTOUT/TRANSLUCENT
-SignTextProvider ───────► TextBakedModel          模型烘焙时追加文字层顶点
+TextProvider ───────► TextBakedModel          模型烘焙时追加文字层顶点
 Interactive ────────────► UseBlockCallback       客户端右键打开 GUI
 PlacementBehavior ─────► CustomBlock             服务端放置自动设置朝向/旋转
+
+> **说明**：文字功能模块是公共基础设施，任何实现 `TextProvider` 的方块都可以复用
+> 文字渲染、GUI 编辑、网络同步等完整能力，不限于特定方块类型。
 ```
 
 ---
@@ -33,9 +36,9 @@ PlacementBehavior ─────► CustomBlock             服务端放置自�
 Block (Minecraft)
   │
   ├── ModelBakeDecorator (阶段标识父接口)
-  │     └── SignTextProvider   (独立，需配合 BlockEntityProvider)
+  │     └── TextProvider   (独立，需配合 BlockEntityProvider)
   │           ├── getBlockEntityType()
-  │           ├── getSignEntity(World, BlockPos) [default]
+  │           ├── getTextEntity(World, BlockPos) [default]
   │           ├── getTextLines(World, BlockPos)  [default]
   │           └── getTextLineCount(World, BlockPos) [default]
   │
@@ -83,8 +86,8 @@ util 包（非模型能力，通用挂钩）：
 | 只需旋转的装饰方块 | `Directional` + `Layered` |
 | 可自由角度旋转的方块 | `Rotatable` + `Layered` |
 | 半透明方块 | `Layered`（TRANSLUCENT） |
-| 纯文字显示牌 | `Directional` + `Offset` + `Layered` + `BlockEntityProvider` + `SignTextProvider` + `GuiInteractive` |
-| 可交互编辑的文字方块 | `GuiInteractive` + `SignTextProvider` + `BlockEntityProvider` |
+| 纯文字显示方块 | `Directional` + `Offset` + `Layered` + `BlockEntityProvider` + `TextProvider` + `GuiInteractive` |
+| 可交互编辑的文字方块 | `GuiInteractive` + `TextProvider` + `BlockEntityProvider` |
 | 需要权限控制的编辑方块 | `GuiInteractive`（覆盖 `canOpenGui` 添加权限检查） |
 
 ---
@@ -158,7 +161,7 @@ FACING = WEST  → rotation=3  → 270° → 3π/2 rad
 | **用途** | 声明方块渲染时需要应用 3D 空间偏移 |
 | **依赖** | 无（可与 Rotatable/Directional 任意组合） |
 | **BlockState 属性** | 无新增（偏移量由实现类根据已有属性计算） |
-| **客户端消费方** | `OffsetBakedModel` + `SignBlockRenderer` |
+| **客户端消费方** | `OffsetBakedModel` + `TextBlockRenderer` |
 
 **核心方法**：
 
@@ -206,29 +209,30 @@ public float[] getOffset(BlockState state) {
 
 ---
 
-### 3.5 SignTextProvider（文字层能力）
+### 3.5 TextProvider（文字层能力）
 
 | 项目 | 说明 |
 |------|------|
 | **用途** | 声明方块需要在渲染时叠加可自定义文字层（独立于方块模型） |
 | **依赖** | 必须同时实现 `BlockEntityProvider`（因为文字数据存于 BlockEntity） |
 | **阶段标识** | 继承 `ModelBakeDecorator`（模型烘焙修饰阶段） |
-| **客户端消费方** | `TextBakedModel`（模型烘焙阶段） + `SignBlockRenderer`（BlockEntityRenderer，每帧渲染） |
+| **客户端消费方** | `TextBakedModel`（模型烘焙阶段） + `TextBlockRenderer`（BlockEntityRenderer，每帧渲染） |
+| **公共性** | 本接口是公共文字功能基础设施的核心，任何需要文字渲染功能的方块都应实现此接口 |
 
 **核心方法**：
 
 | 方法 | 类型 | 说明 |
 |------|------|------|
-| `getBlockEntityType()` | abstract | 返回此类方块专属的 `BlockEntityType<? extends SignBlockEntity>` |
-| `getSignEntity(World, BlockPos)` | default | 类型安全地获取 SignBlockEntity（自动校验类型） |
+| `getBlockEntityType()` | abstract | 返回此类方块专属的 `BlockEntityType<? extends TextBlockEntity>` |
+| `getTextEntity(World, BlockPos)` | default | 类型安全地获取 TextBlockEntity（自动校验类型） |
 | `getTextLines(World, BlockPos)` | default | 获取不可变文字行列表；不存在返回 `List.of()` |
 | `getTextLineCount(World, BlockPos)` | default | 获取文字行数量；不存在返回 0 |
 
 **与其他接口的关系**：
 ```
-SignTextProvider 属于 ModelBakeDecorator 阶段（往模型里追加顶点）。
+TextProvider 属于 ModelBakeDecorator 阶段（往模型里追加顶点）。
 变换阶段（Rotatable/Offset）作用在装饰阶段的结果之上。
-SignBlockRenderer 会自动检查：
+TextBlockRenderer 会自动检查：
   - Directional / Rotatable → 应用 Y 轴旋转（绕 0.5,0.5,0.5）
   - Offset                  → 应用 3D 偏移
   - 然后再渲染每行 TextLine
@@ -300,7 +304,7 @@ public class MyBlock extends CustomBlock implements Interactive {
 
 **典型实现**：
 ```java
-public class MySignBlock extends CustomBlock implements GuiInteractive {
+public class MyTextBlock extends CustomBlock implements GuiInteractive, TextProvider {
     @Override
     public boolean canOpenGui(PlayerEntity player, BlockPos pos) {
         // 示例：只有 OP 玩家才能打开编辑界面
@@ -320,7 +324,7 @@ public class MySignBlock extends CustomBlock implements GuiInteractive {
 UseBlockCallback 检测到 GuiInteractive
   → 调用 canOpenGui(player, pos) 检查前置条件
     → 若返回 false → 阻断，返回 SUCCESS
-    → 若返回 true → 打开 SignBlockScreen
+    → 若返回 true → 打开 TextBlockScreen
       → 调用 onGuiOpened(player, pos) 执行回调
       → 返回 SUCCESS
 ```
@@ -342,11 +346,11 @@ UseBlockCallback 检测到 GuiInteractive
 
 **使用方式**：
 ```java
-public class MySignBlock extends CustomBlock implements Interactive {
+public class MyTextBlock extends CustomBlock implements Interactive {
     @Override
     public BlockInteraction getInteraction() {
         return (state, world, pos, player, hand, hit) -> {
-            // 打开 GUI / 修改文字 / 其他自定义行为
+            // 自定义服务端逻辑
             return ActionResult.SUCCESS;
         };
     }
@@ -404,7 +408,7 @@ CustomBlock.getPlacementState(ctx)
 
 | 阶段标识 | 职责 | 属于此阶段的能力接口 |
 |----------|------|---------------------|
-| `ModelBakeDecorator` | 往模型顶点流里**追加新的几何数据**（如文字层） | `SignTextProvider` |
+| `ModelBakeDecorator` | 往模型顶点流里**追加新的几何数据**（如文字层） | `TextProvider` |
 | `ModelWorldTransformer` | 对**所有已有顶点**做世界坐标变换（旋转、偏移） | `Rotatable` / `Directional` / `Offset` |
 
 **执行顺序保证**：
@@ -444,18 +448,18 @@ ChineseCoreBuildingClient.onInitializeClient()
 │     └── 遍历 Registries.BLOCK → 扫描 Layered → BlockRenderLayerMap.putBlock()
 │
 ├── ModelPluginRegistry
-│     ├── register(Phase.DECORATOR, block -> block instanceof SignTextProvider, TextBakedModel::new)
+│     ├── register(Phase.DECORATOR, block -> block instanceof TextProvider, TextBakedModel::new)
 │     ├── register(Phase.TRANSFORMER, block -> block instanceof Rotatable, RotationBakedModel::new)
 │     ├── register(Phase.TRANSFORMER, block -> block instanceof Offset,    OffsetBakedModel::new)
 │     └── registerAll()  // 先装饰后变换的顺序保证
 │
 ├── BlockEntityRendererFactories.register(
 │         TestSignBlock.ENTITY_TYPE,
-│         SignBlockRenderer::new
+│         TextBlockRenderer::new
 │     )
 │
 └── UseBlockCallback.EVENT.register(...)
-      └── 客户端右键 → Interactive.shouldOpenGui() → 打开 SignBlockScreen
+      └── 客户端右键 → Interactive.shouldOpenGui() → 打开 TextBlockScreen
 ```
 
 ### 渲染管线对比
@@ -464,10 +468,10 @@ ChineseCoreBuildingClient.onInitializeClient()
 |------|--------|------|----------|
 | **模型烘焙（装饰）** | TextBakedModel | 资源加载 | 读取 BlockEntity 数据 → 追加文字层顶点 |
 | **模型烘焙（变换）** | RotationBakedModel / OffsetBakedModel | 资源加载 | 读取 BlockState 属性 → 变换所有顶点 |
-| **BlockEntity 渲染** | SignBlockRenderer | 每帧渲染 | 读取 BlockState 属性 → 变换矩阵 → 绘制文字 |
+| **BlockEntity 渲染** | TextBlockRenderer | 每帧渲染 | 读取 BlockState 属性 → 变换矩阵 → 绘制文字 |
 | **渲染层绑定** | BlockRenderLayerMap | 初始化一次 | Layered.getRenderLayerType() → RenderLayer 映射 |
 
-> **关键一致性保证**：RotationBakedModel / OffsetBakedModel 和 SignBlockRenderer 使用完全相同的接口读取旋转/偏移参数，保证方块模型和文字层严格对齐。
+> **关键一致性保证**：RotationBakedModel / OffsetBakedModel 和 TextBlockRenderer 使用完全相同的接口读取旋转/偏移参数，保证方块模型和文字层严格对齐。
 
 ---
 
@@ -476,24 +480,24 @@ ChineseCoreBuildingClient.onInitializeClient()
 ### 6.1 文字数据流
 
 ```
-客户端 SignBlockScreen (GUI)
+客户端文字编辑 GUI (TextBlockScreen / SingleLineScreen)
   │
   ├─ 编辑 editingLines (副本列表)
   │
   └─ 点击"保存"
        │
        ▼
-  SignBlockClientService.saveLines(pos, lines)
+  TextBlockClientService.saveLines(pos, lines)
        │
-       ├─ SignBlockTextPayload.encode(buf, pos, lines)
+       ├─ TextBlockPayload.encode(buf, pos, lines)
        │     └─ NBT 序列化: BlockPos + NbtList(TextLine NBT)
        │
        └─ ClientPlayNetworking.send(ID, buf)
              │
              ▼
-  服务端 SignBlockTextService (接收器)
+  服务端 TextBlockService (接收器)
        │
-       ├─ SignBlockTextPayload.decode(buf) → Decoded(pos, lines)
+       ├─ TextBlockPayload.decode(buf) → Decoded(pos, lines)
        │
        └─ saveLines(world, pos, lines)
              │
@@ -519,7 +523,7 @@ public record TextLine(
 )
 ```
 
-**SignBlockEntity（文字层 BlockEntity）**：
+**TextBlockEntity（文字方块 BlockEntity）**：
 - 继承 `CustomBlockEntity`（统一基类）
 - 存储 `List<TextLine>`，支持增删改查
 - 自动 `markModified()` → 持久化 + 客户端同步
@@ -548,7 +552,7 @@ public record TextLine(
 ```
 BlockEntity (Minecraft)
   └── CustomBlockEntity
-        ├── SignBlockEntity        — 可编辑文字层
+        ├── TextBlockEntity        — 可编辑文字方块
         └── 未来的 XXXBlockEntity  — 其他功能方块实体
 ```
 
@@ -556,14 +560,14 @@ BlockEntity (Minecraft)
 
 ## 8. 实现规范 Checklist
 
-实现一个带文字层的路牌方块需满足：
+实现一个带文字层的方块需满足：
 
-- [ ] Block 类 `implements Directional, Offset, Layered, BlockEntityProvider, SignTextProvider, GuiInteractive`
+- [ ] Block 类 `implements Directional, Offset, Layered, BlockEntityProvider, TextProvider, GuiInteractive`
 - [ ] 构造函数：`setDefaultState(initDirection(getDefaultState()))`
 - [ ] `appendProperties`：显式调用 `Directional.super.appendProperties(builder)`
-- [ ] `getRenderLayerType()` 返回 CUTOUT（路牌通常有透明区域）
+- [ ] `getRenderLayerType()` 返回 CUTOUT（文字方块通常有透明区域）
 - [ ] `getOffset(BlockState)` 根据 FACING 返回正确的偏移
-- [ ] `createBlockEntity(pos, state)` 返回正确类型的 SignBlockEntity 子类
+- [ ] `createBlockEntity(pos, state)` 返回正确类型的 TextBlockEntity 子类
 - [ ] `getBlockEntityType()` 返回注册的 BlockEntityType
 - [ ] 注册时 BlockEntityType 的 factory 必须与构造函数签名匹配（三元 `(type, pos, state)`）
 - [ ] `blocksDefaultInteraction()` 返回 true（阻断原版放置逻辑）
@@ -606,7 +610,7 @@ ModelPluginRegistry.register(
 ### Q: 为什么文字渲染在两个地方都有？
 
 - **TextBakedModel**（模型烘焙阶段）：当前版本仅代理原始模型，为未来升级预留（动态贴图注入 RenderContext）
-- **SignBlockRenderer**（BlockEntityRenderer）：当前实际渲染文字的地方，每帧调用
+- **TextBlockRenderer**（BlockEntityRenderer）：当前实际渲染文字的地方，每帧调用
 
 两者使用完全一致的变换公式和旋转中心，保证文字与模型同步。
 

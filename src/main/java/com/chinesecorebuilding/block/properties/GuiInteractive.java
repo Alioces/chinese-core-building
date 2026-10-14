@@ -14,14 +14,19 @@ import net.minecraft.util.math.BlockPos;
  * </ol>
  * </p>
  * <p>
+ * 本接口是公共文字功能基础设施的一部分，任何需要 GUI 编辑功能的方块都应实现此接口。
+ * 实现此接口并配合 {@link SignTextProvider} 使用时，方块将自动获得文字编辑 GUI。
+ * </p>
+ * <p>
  * GUI 实例的创建由客户端 {@code UseBlockCallback} 根据方块类型自动处理。
- * 默认情况下，实现此接口的方块会打开 {@code SignBlockScreen}（文字编辑界面）。
+ * 默认情况下，实现此接口和 {@link SignTextProvider} 的方块会打开
+ * {@code SignBlockScreen}（多行文字编辑界面）。
  * 如需自定义 GUI，请在客户端代码中注册自定义处理器。
  * </p>
  * <p>
  * 使用场景：
  * <ul>
- *   <li>文字编辑方块 → 打开 SignBlockScreen</li>
+ *   <li>文字编辑方块 → 打开文字编辑 GUI</li>
  *   <li>配置面板方块 → 打开自定义设置界面</li>
  *   <li>数据展示方块 → 打开信息查看界面</li>
  * </ul>
@@ -29,7 +34,7 @@ import net.minecraft.util.math.BlockPos;
  * <p>
  * 使用方式：
  * <pre>
- * public class MySignBlock extends CustomBlock implements GuiInteractive {
+ * public class MyTextBlock extends CustomBlock implements GuiInteractive, SignTextProvider {
  *     &#64;Override
  *     public boolean canOpenGui(PlayerEntity player, BlockPos pos) {
  *         // 可选：添加权限检查、距离检查等
@@ -45,6 +50,7 @@ import net.minecraft.util.math.BlockPos;
  * </p>
  *
  * @see Interactive
+ * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
  */
 public interface GuiInteractive extends Interactive {
 

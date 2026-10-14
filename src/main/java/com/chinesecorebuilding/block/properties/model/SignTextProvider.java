@@ -15,6 +15,15 @@ import java.util.List;
  * 标识方块需要在渲染时叠加可自定义文字层。
  * 实现类通常同时实现 {@link BlockEntityProvider}。
  * </p>
+ * <p>
+ * 本接口是公共文字功能基础设施的核心，任何需要文字渲染功能的方块都应实现此接口。
+ * 实现后，方块将自动获得：
+ * <ul>
+ *   <li>文字层的渲染能力（由 {@link SignBlockRenderer} 负责）</li>
+ *   <li>GUI 编辑能力（由 {@link GuiInteractive} 配合使用）</li>
+ *   <li>网络同步能力（由 {@link SignBlockTextService} 负责）</li>
+ * </ul>
+ * </p>
  *
  * <h3>能力接口体系</h3>
  * <pre>

@@ -25,13 +25,14 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
 /**
- * 单行文字路牌方块。
+ * 单行文字方块。
  * <p>
  * 复用 {@link TextBlockEntity} 和 {@link SignTextProvider} 基础设施，
  * 但通过 {@link #isSingleLineMode()} 标识为单行模式，
  * GUI 层根据此标识显示简化的单行编辑界面。
  * </p>
  * <p>
+ * 本方块是公共文字功能的单行模式实现，适用于只需要编辑单行文字的场景。
  * 能力接口：
  * <ul>
  *   <li>{@link Directional} — 4 方向水平朝向</li>
@@ -69,10 +70,10 @@ public class SingleLineSignBlock extends CustomBlock
     }
 
     /**
-     * 一次性注册单行路牌方块、对应物品。
+     * 一次性注册单行文字方块、对应物品。
      * <p>
      * 复用 {@link TestSignBlock#ENTITY_TYPE}，不创建新的 BlockEntityType。
-     * 这样所有文字路牌共享同一个实体类型，简化渲染器和网络层逻辑。
+     * 这样所有文字方块共享同一个实体类型，简化渲染器和网络层逻辑。
      * </p>
      */
     public static void register() {
@@ -113,11 +114,11 @@ public class SingleLineSignBlock extends CustomBlock
     }
 
     /**
-     * 创建 SignBlockEntity 实例，复用测试方块的实体类型。
+     * 创建 TextBlockEntity 实例，复用测试方块的实体类型。
      *
      * @param pos   方块位置
      * @param state 方块状态
-     * @return 新的 SignBlockEntity
+     * @return 新的 TextBlockEntity
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {

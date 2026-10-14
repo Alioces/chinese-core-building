@@ -38,15 +38,15 @@ import java.util.function.Supplier;
  * <b>关于文字顶点的合成策略：</b>
  * TextLine 数据是 BlockEntity 级别（每个方块实体独有），不是 BlockState 级别，
  * 因此无法在 BakedModel 静态烘焙阶段注入（BakedModel 是全局共享缓存的）。
- * 当前版本文字渲染仍由 {@code SignBlockRenderer}（BlockEntityRenderer 管线）负责，
- * 但 SignBlockRenderer 必须与 RotationBakedModel / OffsetBakedModel
+ * 当前版本文字渲染仍由 {@code TextBlockRenderer}（BlockEntityRenderer 管线）负责，
+ * 但 TextBlockRenderer 必须与 RotationBakedModel / OffsetBakedModel
  * 使用<b>完全一致的旋转中心和变换公式</b>，保证文字与模型同步旋转偏移。
  * </p>
  * <p>
  * <b>架构演进方向：</b>
  * 当 Fabric 渲染器 API 支持动态贴图注入 RenderContext 时，
  * TextBakedModel 可升级为在 emitBlockQuads 运行时动态渲染文字到 FrameBuffer，
- * 然后生成带 UV 的 BakedQuad 注入 RenderContext。届时 SignBlockRenderer 可删除，
+ * 然后生成带 UV 的 BakedQuad 注入 RenderContext。届时 TextBlockRenderer 可删除，
  * 文字真正进入 BakedModel 管线，与模型本体共享同一个 Draw call。
  * </p>
  *

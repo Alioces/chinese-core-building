@@ -27,6 +27,10 @@ import java.util.List;
  * 和 {@link com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel}
  * <b>完全一致的变换公式和旋转中心</b>。
  * </p>
+ * <p>
+ * 本渲染器是公共文字功能基础设施的一部分，任何实现 {@link SignTextProvider} 的方块
+ * 都可以复用此渲染器进行文字层的渲染。
+ * </p>
  *
  * <h3>变换矩阵链（顺序从外到内）</h3>
  * <pre>
@@ -57,7 +61,7 @@ import java.util.List;
  * @see com.chinesecorebuilding.client.model.postProcessing.RotationBakedModel
  * @see com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel
  */
-public class SignBlockRenderer<T extends TextBlockEntity> implements BlockEntityRenderer<T> {
+public class TextBlockRenderer<T extends TextBlockEntity> implements BlockEntityRenderer<T> {
 
     /**
      * 旋转中心常量。
@@ -82,12 +86,12 @@ public class SignBlockRenderer<T extends TextBlockEntity> implements BlockEntity
      *
      * @param ctx BlockEntityRenderer 工厂上下文，从中获取 {@link TextRenderer}
      */
-    public SignBlockRenderer(BlockEntityRendererFactory.Context ctx) {
+    public TextBlockRenderer(BlockEntityRendererFactory.Context ctx) {
         this.textRenderer = ctx.getTextRenderer();
     }
 
     /**
-     * 渲染 SignBlockEntity 的文字层。
+     * 渲染 TextBlockEntity 的文字层。
      * <p>
      * 对 Entity 存储的每一行 {@link TextLine} 依次渲染，
      * 变换链（Offset → Rotation → 每行独立 translate/scale）与
@@ -99,7 +103,7 @@ public class SignBlockRenderer<T extends TextBlockEntity> implements BlockEntity
      * 无文字行时直接短路返回，避免无谓的矩阵操作。
      * </p>
      *
-     * @param entity     目标 BlockEntity（SignBlockEntity 或其子类）
+     * @param entity     目标 BlockEntity（TextBlockEntity 或其子类）
      * @param tickDelta  帧间插值（0~1），用于平滑动画
      * @param matrices   矩阵栈，承载世界变换和自定义变换
      * @param vertexConsumers 顶点消费者提供者，用于获取光照/雾化等渲染上下文
