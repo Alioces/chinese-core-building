@@ -1,6 +1,6 @@
 package com.chinesecorebuilding.client.renderer;
 
-import com.chinesecorebuilding.block.entity.SignBlockEntity;
+import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
 import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
@@ -57,7 +57,7 @@ import java.util.List;
  * @see com.chinesecorebuilding.client.model.postProcessing.RotationBakedModel
  * @see com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel
  */
-public class SignBlockRenderer<T extends SignBlockEntity> implements BlockEntityRenderer<T> {
+public class SignBlockRenderer<T extends TextBlockEntity> implements BlockEntityRenderer<T> {
 
     /**
      * 旋转中心常量。

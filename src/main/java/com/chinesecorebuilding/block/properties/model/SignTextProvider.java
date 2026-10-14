@@ -1,6 +1,6 @@
 package com.chinesecorebuilding.block.properties.model;
 
-import com.chinesecorebuilding.block.entity.SignBlockEntity;
+import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.entity.BlockEntityType;
@@ -42,7 +42,7 @@ public interface SignTextProvider extends ModelBakeDecorator {
      *
      * @return 此类方块专属的 BlockEntityType（泛型上界为 SignBlockEntity）
      */
-    BlockEntityType<? extends SignBlockEntity> getBlockEntityType();
+    BlockEntityType<? extends TextBlockEntity> getBlockEntityType();
 
     /**
      * 在指定世界和位置查找此类型的 BlockEntity。
@@ -51,11 +51,11 @@ public interface SignTextProvider extends ModelBakeDecorator {
      * @param pos   方块位置
      * @return 匹配的 SignBlockEntity，或 null（位置为空、类型不符、世界为 null）
      */
-    default SignBlockEntity getSignEntity(World world, BlockPos pos) {
+    default TextBlockEntity getSignEntity(World world, BlockPos pos) {
         if (world == null || pos == null) return null;
         var entity = world.getBlockEntity(pos);
         if (entity != null && entity.getType() == getBlockEntityType()) {
-            return (SignBlockEntity) entity;
+            return (TextBlockEntity) entity;
         }
         return null;
     }
@@ -68,7 +68,7 @@ public interface SignTextProvider extends ModelBakeDecorator {
      * @return 文字行不可变列表；方块不存在时返回 {@link List#of()}（空列表）
      */
     default List<TextLine> getTextLines(World world, BlockPos pos) {
-        SignBlockEntity e = getSignEntity(world, pos);
+        TextBlockEntity e = getSignEntity(world, pos);
         return e != null ? e.getLines() : List.of();
     }
 
@@ -80,7 +80,7 @@ public interface SignTextProvider extends ModelBakeDecorator {
      * @return 文字行数量；方块不存在时返回 0
      */
     default int getTextLineCount(World world, BlockPos pos) {
-        SignBlockEntity e = getSignEntity(world, pos);
+        TextBlockEntity e = getSignEntity(world, pos);
         return e != null ? e.getLineCount() : 0;
     }
 }

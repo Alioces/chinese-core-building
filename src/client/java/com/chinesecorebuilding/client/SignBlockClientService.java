@@ -1,6 +1,6 @@
 package com.chinesecorebuilding.client;
 
-import com.chinesecorebuilding.block.entity.SignBlockEntity;
+import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
 import com.chinesecorebuilding.network.SignBlockTextPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -45,7 +45,7 @@ public final class SignBlockClientService {
     public static List<TextLine> readLines(BlockPos pos) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.world == null) return new ArrayList<>();
-        if (!(mc.world.getBlockEntity(pos) instanceof SignBlockEntity entity)) return new ArrayList<>();
+        if (!(mc.world.getBlockEntity(pos) instanceof TextBlockEntity entity)) return new ArrayList<>();
         return new ArrayList<>(entity.getLines());
     }
 

@@ -1,6 +1,6 @@
 package com.chinesecorebuilding.network;
 
-import com.chinesecorebuilding.block.entity.SignBlockEntity;
+import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.world.World;
 
@@ -10,7 +10,7 @@ import net.minecraft.world.World;
  * 职责：
  * <ol>
  *   <li>注册 Fabric networking 全局接收器，等待客户端发过来的 {@link SignBlockTextPayload}</li>
- *   <li>收到 Payload 后解码，把文字行写入目标 {@link SignBlockEntity}</li>
+ *   <li>收到 Payload 后解码，把文字行写入目标 {@link TextBlockEntity}</li>
  * </ol>
  * 本类是后端的"单一数据入口"——无论未来从 GUI、命令方块还是数据包
  * 修改路牌文字，都应该走本类的 {@link #saveLines} 方法。
@@ -61,7 +61,7 @@ public final class SignBlockTextService {
     public static void saveLines(World world, net.minecraft.util.math.BlockPos pos,
                                  java.util.List<com.chinesecorebuilding.block.entity.TextLine> lines) {
         if (world.isClient) return;
-        if (world.getBlockEntity(pos) instanceof SignBlockEntity entity) {
+        if (world.getBlockEntity(pos) instanceof TextBlockEntity entity) {
             entity.setLines(lines);
         }
     }

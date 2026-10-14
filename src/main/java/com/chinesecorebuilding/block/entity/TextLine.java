@@ -27,7 +27,7 @@ import net.minecraft.util.math.Vec3d;
  * </ul>
  * </p>
  *
- * @see SignBlockEntity
+ * @see TextBlockEntity
  */
 public record TextLine(
         Text text,

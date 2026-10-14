@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.client;
 
+import com.chinesecorebuilding.block.SingleLineSignBlock;
 import com.chinesecorebuilding.block.TestSignBlock;
 import com.chinesecorebuilding.block.properties.GuiInteractive;
 import com.chinesecorebuilding.block.properties.model.Layered;
@@ -7,6 +8,7 @@ import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
 import com.chinesecorebuilding.client.gui.SignBlockScreen;
+import com.chinesecorebuilding.client.gui.SingleLineSignScreen;
 import com.chinesecorebuilding.client.model.ModelBakePluginRegistry;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry;
 import com.chinesecorebuilding.client.model.ModelPluginRegistry.Phase;
@@ -92,7 +94,7 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, SignBlockRenderer::new);
 
         // 7. 交互回调：客户端右键方块时检测 GuiInteractive
-        //    检查前置条件后打开 SignBlockScreen 编辑器。不在 main 源集引用 client 类，
+        //    检查前置条件后打开对应的 GUI 编辑器。不在 main 源集引用 client 类，
         //    保持 main → client 的单向依赖。
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!world.isClient) return ActionResult.PASS;   // 只在客户端处理
@@ -105,8 +107,15 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
             if (block instanceof GuiInteractive guiInteractive) {
                 // 前置条件检查
                 if (guiInteractive.canOpenGui(player, pos)) {
-                    // 默认打开 SignBlockScreen
-                    net.minecraft.client.gui.screen.Screen screen = new SignBlockScreen(pos);
+                    // 根据方块类型选择对应的 GUI
+                    net.minecraft.client.gui.screen.Screen screen;
+                    if (block instanceof SingleLineSignBlock) {
+                        screen = new SingleLineSignScreen(pos);
+                    } else if (block instanceof SignTextProvider) {
+                        screen = new SignBlockScreen(pos);
+                    } else {
+                        screen = new SignBlockScreen(pos);
+                    }
                     MinecraftClient.getInstance().setScreen(screen);
                     // 回调逻辑
                     guiInteractive.onGuiOpened(player, pos);

@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 可编辑路牌 BlockEntity。
+ * 可编辑文字方块 BlockEntity。
  * <p>
  * 存储任意数量的 {@link TextLine}，每行拥有独立的位置、颜色、缩放等属性。
  * 继承 {@link CustomBlockEntity} 统一基类，自动拥有 markModified + 客户端同步能力。
@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @see TextLine
  */
-public class SignBlockEntity extends CustomBlockEntity {
+public class TextBlockEntity extends CustomBlockEntity {
 
     /**
      * 所有文字行列表。
@@ -51,7 +51,7 @@ public class SignBlockEntity extends CustomBlockEntity {
      * @param pos   方块位置
      * @param state 方块状态
      */
-    public SignBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+    public TextBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
     }
 

@@ -1,7 +1,7 @@
 package com.chinesecorebuilding.block;
 
 import com.chinesecorebuilding.ChineseCoreBuildingMod;
-import com.chinesecorebuilding.block.entity.SignBlockEntity;
+import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.properties.*;
 import com.chinesecorebuilding.block.properties.model.Directional;
 import com.chinesecorebuilding.block.properties.model.Layered;
@@ -58,7 +58,7 @@ public class TestSignBlock extends CustomBlock
      * 使用 holder 数组延迟赋值是因为 BlockEntityType 构造时需要先拿到类型自身。
      * </p>
      */
-    public static BlockEntityType<SignBlockEntity> ENTITY_TYPE;
+    public static BlockEntityType<TextBlockEntity> ENTITY_TYPE;
 
     /**
      * 默认构造函数，初始化默认朝向并声明方块属性（nonOpaque）。
@@ -82,12 +82,12 @@ public class TestSignBlock extends CustomBlock
         Registry.register(Registries.ITEM, ChineseCoreBuildingMod.id(ID), new BlockItem(INSTANCE, new Item.Settings()));
 
         // holder 数组是因为 BlockEntityType 构造时需要先拿到类型自身，用数组做延迟赋值
-        BlockEntityType<SignBlockEntity>[] holder = new BlockEntityType[1];
+        BlockEntityType<TextBlockEntity>[] holder = new BlockEntityType[1];
         holder[0] = Registry.register(
                 Registries.BLOCK_ENTITY_TYPE,
                 ChineseCoreBuildingMod.id(ID + "_entity"),
                 FabricBlockEntityTypeBuilder.create(
-                        (pos, state) -> new SignBlockEntity(holder[0], pos, state),
+                        (pos, state) -> new TextBlockEntity(holder[0], pos, state),
                         INSTANCE
                 ).build()
         );
@@ -151,7 +151,7 @@ public class TestSignBlock extends CustomBlock
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new SignBlockEntity(ENTITY_TYPE, pos, state);
+        return new TextBlockEntity(ENTITY_TYPE, pos, state);
     }
 
     /**
@@ -160,7 +160,7 @@ public class TestSignBlock extends CustomBlock
      * @return ENTITY_TYPE
      */
     @Override
-    public BlockEntityType<? extends SignBlockEntity> getBlockEntityType() {
+    public BlockEntityType<? extends TextBlockEntity> getBlockEntityType() {
         return ENTITY_TYPE;
     }
 }
