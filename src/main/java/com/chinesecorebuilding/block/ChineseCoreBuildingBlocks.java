@@ -2,6 +2,7 @@ package com.chinesecorebuilding.block;
 
 import com.chinesecorebuilding.ChineseCoreBuildingMod;
 import com.chinesecorebuilding.block.roadSigns.RoadSignsBlock;
+import com.chinesecorebuilding.block.roadSigns.SingleLineRoadSignBlock;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
@@ -199,6 +200,15 @@ public class ChineseCoreBuildingBlocks {
 
     /** 酒柜测试方块（验证插件链） */
     public static final Block wine_cabinet = register("wine_cabinet", new WineCabinetBlock());
+
+    /** 文字方块测试（公共文字功能参考实现） */
+    public static final Block test_sign = TestSignBlock.INSTANCE;
+
+    /** 单行文字方块测试（公共文字功能单行模式实现） */
+    public static final Block single_line_sign = SingleLineSignBlock.INSTANCE;
+
+    /** 单行文字路标测试（路标 + 单行文字编辑） */
+    public static final Block single_line_road_sign = register("single_line_road_sign", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 
     /**
      * 统一注册方块及其对应的方块物品。

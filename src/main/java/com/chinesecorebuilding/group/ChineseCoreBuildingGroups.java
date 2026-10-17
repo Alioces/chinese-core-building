@@ -35,15 +35,11 @@ public class ChineseCoreBuildingGroups {
      */
     public static final ItemGroup ROAD_GROUP = Registry.register(
             Registries.ITEM_GROUP,
-            id("road_group"),  // 注册 ID：chinese-core-building:road_group
+            id("road_group"),
             FabricItemGroup.builder()
-                    // 设置物品组图标（显示在标签页上的图标）
                     .icon(() -> new ItemStack(ChineseCoreBuildingBlocks.embankment_road01))
-                    // 设置显示名称（通过翻译键从语言文件获取）
                     .displayName(Text.translatable(MOD_GROUP + "road"))
-                    // 添加物品组内容
                     .entries((context, entries) -> {
-                        // ------ 警告标志 ------
                         entries.add(ChineseCoreBuildingBlocks.beware_of_crosswind.asItem());
                         entries.add(ChineseCoreBuildingBlocks.crossbuck_symbol.asItem());
                         entries.add(ChineseCoreBuildingBlocks.crossroads01.asItem());
@@ -97,7 +93,6 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.watch_for_pedestrians02.asItem());
                         entries.add(ChineseCoreBuildingBlocks.watch_for_wild_animals.asItem());
 
-                        // ------ 禁令标志 ------
                         entries.add(ChineseCoreBuildingBlocks.axle_weight_limit.asItem());
                         entries.add(ChineseCoreBuildingBlocks.do_not_enter.asItem());
                         entries.add(ChineseCoreBuildingBlocks.end_of_km_h.asItem());
@@ -134,6 +129,32 @@ public class ChineseCoreBuildingGroups {
     );
 
     /**
+     * 测试方块物品组。
+     * <p>
+     * 在创造模式物品栏中显示为一个独立标签页，包含所有测试/功能验证方块。
+     * </p>
+     * <ul>
+     *     <li>图标：酒柜测试方块 ({@link ChineseCoreBuildingBlocks#wine_cabinet})</li>
+     *     <li>显示名称：翻译键 {@code itemGroup.chinese-core-building.group.test}</li>
+     *     <li>内容：酒柜测试方块、文字方块测试、单行文字方块测试、单行文字路标测试</li>
+     * </ul>
+     */
+    public static final ItemGroup TEST_GROUP = Registry.register(
+            Registries.ITEM_GROUP,
+            id("test_group"),
+            FabricItemGroup.builder()
+                    .icon(() -> new ItemStack(ChineseCoreBuildingBlocks.wine_cabinet))
+                    .displayName(Text.translatable(MOD_GROUP + "test"))
+                    .entries((context, entries) -> {
+                        entries.add(ChineseCoreBuildingBlocks.wine_cabinet.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.test_sign.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.single_line_sign.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.single_line_road_sign.asItem());
+                    })
+                    .build()
+    );
+
+    /**
      * 初始化入口。
      * <p>
      * 调用此方法会触发类加载，使所有静态常量（物品组实例）被初始化并注册。
@@ -141,7 +162,7 @@ public class ChineseCoreBuildingGroups {
      * </p>
      */
     public static void initialize() {
-        // 无需额外逻辑，类加载时静态字段会自动初始化
-        LOGGER.info("ChineseCoreBuildingGroups initialized ROAD_GROUP is {} items", ROAD_GROUP.getDisplayStacks().size());
+        LOGGER.info("ChineseCoreBuildingGroups initialized: ROAD_GROUP={} items, TEST_GROUP={} items",
+                ROAD_GROUP.getDisplayStacks().size(), TEST_GROUP.getDisplayStacks().size());
     }
 }
