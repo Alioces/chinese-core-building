@@ -146,21 +146,40 @@ public class SimpleTextSignBlock extends CustomBlock
     }
 
     /**
-     * 根据方块朝向计算文字的默认位置。
+     * 根据方块朝向计算文字的默认位置（世界坐标）。
      * <p>
-     * 文字位置设置在朝向面的外侧，确保文字浮出方块表面可见。
-     * 坐标系统：方块局部空间，范围 0~1。
+     * <b>重要</b>：由于 {@link com.chinesecorebuilding.client.renderer.TextBlockRenderer}
+     * 作为 DECORATOR 层不再应用旋转变换，此方法返回的是<b>世界坐标</b>
+     * （相对于方块原点，不受方块朝向影响）。
+     * </p>
+     * <p>
+     * 坐标系说明：
+     * <ul>
+     *   <li>原点 (0,0,0) = 方块西北下角</li>
+     *   <li>+X = 东方向</li>
+     *   <li>+Y = 上方向</li>
+     *   <li>+Z = 南方向</li>
+     * </ul>
+     * </p>
+     * <p>
+     * 文字显示在方块的<b>背面</b>（距离放置者最远的面）：
+     * <ul>
+     *   <li>朝北（NORTH）→ 背面是南侧 → Z=1.01</li>
+     *   <li>朝南（SOUTH）→ 背面是北侧 → Z=0.01</li>
+     *   <li>朝东（EAST）→ 背面是西侧 → X=0.01</li>
+     *   <li>朝西（WEST）→ 背面是东侧 → X=1.01</li>
+     * </ul>
      * </p>
      *
      * @param facing 方块朝向
-     * @return 文字位置 Vec3d
+     * @return 文字位置 Vec3d（世界坐标，不会被旋转）
      */
     public static Vec3d getTextPositionForFacing(Direction facing) {
         return switch (facing) {
-            case NORTH -> new Vec3d(0.5, 0.6, 1.01);
-            case SOUTH -> new Vec3d(0.5, 0.6, 0.01);
-            case EAST  -> new Vec3d(0.01, 0.6, 0.5);
-            case WEST  -> new Vec3d(1.01, 0.6, 0.5);
+            case NORTH -> new Vec3d(0.5, 0.6, 1.01);   // 背面=南侧
+            case SOUTH -> new Vec3d(0.5, 0.6, 0.01);   // 背面=北侧
+            case EAST  -> new Vec3d(0.01, 0.6, 0.5);  // 背面=西侧
+            case WEST  -> new Vec3d(1.01, 0.6, 0.5);  // 背面=东侧
             default    -> new Vec3d(0.5, 0.6, 0.01);
         };
     }
