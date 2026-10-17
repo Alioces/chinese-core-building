@@ -184,8 +184,8 @@ public class SingleLineScreen extends AbstractTextScreen {
             List<TextLine> result = new ArrayList<>();
             result.add(TextLine.builder()
                     .text(Text.literal(""))
-                    .position(0.5, 0.6, 0.501)
-                    .color(0xFFFFFF)
+                    .position(0.5, 0.6, 1.01)
+                    .color(0x000000)
                     .scale(1.0f)
                     .glowing(false)
                     .build());

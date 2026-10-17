@@ -102,6 +102,7 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         //    文字渲染在独立的 BlockEntityRenderer 管线里，与 BakedModel 管线解耦，
         //    但 TextBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
         BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
+        BlockEntityRendererFactories.register(SingleLineSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
 
         // 6.5 注册 GUI 屏幕工厂（遵循开闭原则：新增 GUI 类型只需在此注册，回调代码无需修改）
         GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_MULTI_LINE, TextBlockScreen::new);

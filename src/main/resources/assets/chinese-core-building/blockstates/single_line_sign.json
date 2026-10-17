@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "chinese-core-building:block/single_line_sign" },
+    "facing=south": { "model": "chinese-core-building:block/single_line_sign" },
+    "facing=east":  { "model": "chinese-core-building:block/single_line_sign" },
+    "facing=west":  { "model": "chinese-core-building:block/single_line_sign" }
+  }
+}

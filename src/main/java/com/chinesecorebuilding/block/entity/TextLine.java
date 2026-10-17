@@ -60,13 +60,13 @@ public record TextLine(
     public static final float DEFAULT_SCALE = 1.0f;
 
     /**
-     * 默认位置：+Z 面中心 (0.5, 0.5, 1.0)。
+     * 默认位置：+Z 面前方 (0.5, 0.6, 1.01)。
      * <p>
-     * 表示文字行默认显示在方块 +Z 面的中心位置。
-     * 坐标范围为 0~1，相对于方块局部空间。
-     * </p>
+     * 表示文字行默认显示在方块 +Z 面的前方，避免与方块模型发生 Z-fighting。
+     * Z=1.01 让文字略微浮出方块表面，确保可见性。
+     * 坐标范围为 0~1+，相对于方块局部空间。
      */
-    public static final Vec3d DEFAULT_POSITION = new Vec3d(0.5, 0.5, 1.0);
+    public static final Vec3d DEFAULT_POSITION = new Vec3d(0.5, 0.6, 1.01);
 
     /**
      * 紧凑型构造函数，保证所有字段非 null。

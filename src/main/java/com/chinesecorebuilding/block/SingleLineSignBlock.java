@@ -8,6 +8,7 @@ import com.chinesecorebuilding.block.properties.model.Directional;
 import com.chinesecorebuilding.block.properties.model.Layered;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -27,8 +28,8 @@ import net.minecraft.world.BlockView;
 /**
  * 单行文字方块。
  * <p>
- * 复用 {@link TextBlockEntity} 和 {@link SignTextProvider} 基础设施，
- * 但通过 {@link #isSingleLineMode()} 标识为单行模式，
+ * 使用独立的 {@link #ENTITY_TYPE}，确保 BlockEntityRenderer 正确关联。
+ * 通过 {@link #isSingleLineMode()} 标识为单行模式，
  * GUI 层根据此标识显示简化的单行编辑界面。
  * </p>
  * <p>
@@ -60,6 +61,15 @@ public class SingleLineSignBlock extends CustomBlock
     );
 
     /**
+     * BlockEntityType 注册结果。
+     * <p>
+     * 独立的实体类型，确保渲染器正确关联。
+     * 由 {@link #register()} 赋值后供 {@link #createBlockEntity} 使用。
+     * </p>
+     */
+    public static BlockEntityType<TextBlockEntity> ENTITY_TYPE;
+
+    /**
      * 构造函数，初始化默认朝向。
      *
      * @param settings 方块属性配置
@@ -70,15 +80,25 @@ public class SingleLineSignBlock extends CustomBlock
     }
 
     /**
-     * 一次性注册单行文字方块、对应物品。
+     * 一次性注册单行文字方块、对应物品和独立的 BlockEntityType。
      * <p>
-     * 复用 {@link TestSignBlock#ENTITY_TYPE}，不创建新的 BlockEntityType。
-     * 这样所有文字方块共享同一个实体类型，简化渲染器和网络层逻辑。
+     * 创建专用的 ENTITY_TYPE，避免与 TestSignBlock 共享类型导致的渲染器关联问题。
      * </p>
      */
     public static void register() {
         Registry.register(Registries.BLOCK, ChineseCoreBuildingMod.id(ID), INSTANCE);
         Registry.register(Registries.ITEM, ChineseCoreBuildingMod.id(ID), new BlockItem(INSTANCE, new Item.Settings()));
+
+        BlockEntityType<TextBlockEntity>[] holder = new BlockEntityType[1];
+        holder[0] = Registry.register(
+                Registries.BLOCK_ENTITY_TYPE,
+                ChineseCoreBuildingMod.id(ID + "_entity"),
+                FabricBlockEntityTypeBuilder.create(
+                        (pos, state) -> new TextBlockEntity(holder[0], pos, state),
+                        INSTANCE
+                ).build()
+        );
+        ENTITY_TYPE = holder[0];
     }
 
     /**
@@ -114,7 +134,7 @@ public class SingleLineSignBlock extends CustomBlock
     }
 
     /**
-     * 创建 TextBlockEntity 实例，复用测试方块的实体类型。
+     * 创建 TextBlockEntity 实例，使用本方块专用的实体类型。
      *
      * @param pos   方块位置
      * @param state 方块状态
@@ -122,17 +142,17 @@ public class SingleLineSignBlock extends CustomBlock
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new TextBlockEntity(TestSignBlock.ENTITY_TYPE, pos, state);
+        return new TextBlockEntity(ENTITY_TYPE, pos, state);
     }
 
     /**
-     * 返回关联的 BlockEntityType，复用 TestSignBlock 的实体类型。
+     * 返回关联的 BlockEntityType，使用本方块专用的实体类型。
      *
-     * @return TestSignBlock.ENTITY_TYPE
+     * @return ENTITY_TYPE
      */
     @Override
     public BlockEntityType<? extends TextBlockEntity> getBlockEntityType() {
-        return TestSignBlock.ENTITY_TYPE;
+        return ENTITY_TYPE;
     }
 
     /**
