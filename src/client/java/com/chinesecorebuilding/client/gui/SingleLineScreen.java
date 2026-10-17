@@ -31,6 +31,11 @@ public class SingleLineScreen extends AbstractTextScreen {
     private static final int PANEL_W = 300;
 
     /**
+     * 编辑面板高度（像素）。
+     */
+    private static final int PANEL_H = 220;
+
+    /**
      * 控件之间的垂直间距（像素）。
      */
     private static final int SPACING = 8;
@@ -80,7 +85,7 @@ public class SingleLineScreen extends AbstractTextScreen {
         int h = height;
 
         int panelX = (w - PANEL_W) / 2;
-        int panelY = Math.max(30, (h - 200) / 2);
+        int panelY = Math.max(30, (h - PANEL_H) / 2);
 
         int x = panelX + MARGIN;
         int y = panelY + LABEL_H + LABEL_H + 4;
@@ -106,16 +111,16 @@ public class SingleLineScreen extends AbstractTextScreen {
         addDrawable(posZField); addSelectableChild(posZField);
         y += ROW_H + LABEL_H + SPACING;
 
-        colorField = new TextFieldWidget(textRenderer, x, y, 120, ROW_H, Text.literal(""));
+        colorField = new TextFieldWidget(textRenderer, x, y, 100, ROW_H, Text.literal(""));
         colorField.setPlaceholder(Text.literal("颜色 #RRGGBB"));
         colorField.setMaxLength(6);
-        scaleField = new TextFieldWidget(textRenderer, x + 130, y, 100, ROW_H, Text.literal(""));
+        scaleField = new TextFieldWidget(textRenderer, x + 140, y, 80, ROW_H, Text.literal(""));
         scaleField.setPlaceholder(Text.literal("缩放 1.0"));
         scaleField.setMaxLength(6);
         addDrawable(colorField); addSelectableChild(colorField);
         addDrawable(scaleField); addSelectableChild(scaleField);
 
-        colorPreviewX = x + 120 + 8;
+        colorPreviewX = x + 250;
         colorPreviewY = y + 2;
         y += ROW_H + LABEL_H + SPACING;
 
@@ -131,13 +136,13 @@ public class SingleLineScreen extends AbstractTextScreen {
         ).dimensions(x, y, 120, ROW_H).build();
         addDrawableChild(glowBtn);
 
-        int btnY = panelY + 160;
+        int btnY = panelY + PANEL_H - ROW_H - 10;
         saveBtn = ButtonWidget.builder(Text.literal("保存"), b -> {
             saveEditToIndex(0);
             save();
-        }).dimensions(w / 2 - 110, btnY, 100, 20).build();
+        }).dimensions(panelX + 10, btnY, 130, 20).build();
         cancelBtn = ButtonWidget.builder(Text.literal("取消"), b -> close())
-                .dimensions(w / 2 + 10, btnY, 100, 20).build();
+                .dimensions(panelX + PANEL_W - 140, btnY, 130, 20).build();
 
         refreshEditFields(0);
         textField.setFocused(true);
@@ -151,12 +156,12 @@ public class SingleLineScreen extends AbstractTextScreen {
         int w = width;
         int h = height;
         int panelX = (w - PANEL_W) / 2;
-        int panelY = Math.max(30, (h - 200) / 2);
+        int panelY = Math.max(30, (h - PANEL_H) / 2);
 
         context.fill(0, 0, w, h, 0x80000000);
-        context.fill(panelX - 4, panelY - 4, panelX + PANEL_W + 4, panelY + 180, 0x80100010);
+        context.fill(panelX - 4, panelY - 4, panelX + PANEL_W + 4, panelY + PANEL_H + 4, 0x80100010);
 
-        context.drawText(textRenderer, Text.literal("单行文字编辑器"), w / 2 - 70, 10, 0xFFFFFF, true);
+        context.drawText(textRenderer, Text.literal("单行文字编辑器"), w / 2 - 70, panelY - 16, 0xFFFFFF, true);
 
         int x = panelX + MARGIN;
         context.drawText(textRenderer, Text.literal("文字内容"), x, textField.getY() - LABEL_H - 2, 0xFFCCCCCC, false);
