@@ -133,6 +133,11 @@ public class TextBlockScreen extends AbstractTextScreen {
         scaleField.setPlaceholder(Text.literal("1.0"));
         addDrawable(colorField); addSelectableChild(colorField);
         addDrawable(scaleField); addSelectableChild(scaleField);
+
+        // 颜色预览位置：颜色输入框右侧，与输入框垂直居中
+        colorPreviewX = x + 95;
+        colorPreviewY = y + (ROW_H - COLOR_PREVIEW_SIZE) / 2;
+
         y += ROW_H + LABEL_H + 4;
 
         glowBtn = ButtonWidget.builder(Text.literal("发光: 关"), b -> {
