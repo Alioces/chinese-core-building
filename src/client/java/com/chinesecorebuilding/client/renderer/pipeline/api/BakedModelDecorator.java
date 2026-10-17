@@ -1,5 +1,6 @@
-package com.chinesecorebuilding.client.renderer.pipeline;
+package com.chinesecorebuilding.client.renderer.pipeline.api;
 
+import com.chinesecorebuilding.client.renderer.pipeline.context.BakedModelContext;
 import net.minecraft.block.BlockState;
 
 import java.util.Comparator;
@@ -7,14 +8,14 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * BlockEntityRenderer 管线装饰器接口。
+ * BakedModel 管线装饰器接口。
  * <p>
- * 专门用于 BlockEntity 渲染管线的装饰器契约。
+ * 专门用于 BakedModel 渲染管线的装饰器契约。
  * </p>
  *
  * @param <R> 渲染结果类型
  */
-public interface BlockEntityDecorator<R> {
+public interface BakedModelDecorator<R> {
 
     /**
      * 获取装饰器优先级。
@@ -38,7 +39,7 @@ public interface BlockEntityDecorator<R> {
      * @param next    下一个装饰器的渲染函数
      * @return 渲染结果
      */
-    R decorate(BlockEntityRendererContext<?> context, Function<BlockEntityRendererContext<?>, R> next);
+    R decorate(BakedModelContext context, Function<BakedModelContext, R> next);
 
     /**
      * 创建装饰器链。
@@ -48,16 +49,16 @@ public interface BlockEntityDecorator<R> {
      * @param <R>        渲染结果类型
      * @return 包装后的渲染函数
      */
-    static <R> Function<BlockEntityRendererContext<?>, R> createChain(
-            List<BlockEntityDecorator<R>> decorators,
-            Function<BlockEntityRendererContext<?>, R> baseRender) {
+    static <R> Function<BakedModelContext, R> createChain(
+            List<BakedModelDecorator<R>> decorators,
+            Function<BakedModelContext, R> baseRender) {
 
-        decorators.sort(Comparator.comparingInt(BlockEntityDecorator::getPriorityValue));
+        decorators.sort(Comparator.comparingInt(BakedModelDecorator::getPriorityValue));
 
-        Function<BlockEntityRendererContext<?>, R> current = baseRender;
+        Function<BakedModelContext, R> current = baseRender;
         for (int i = decorators.size() - 1; i >= 0; i--) {
             var decorator = decorators.get(i);
-            final Function<BlockEntityRendererContext<?>, R> next = current;
+            final Function<BakedModelContext, R> next = current;
             current = ctx -> decorator.decorate(ctx, next);
         }
 
@@ -66,11 +67,10 @@ public interface BlockEntityDecorator<R> {
 
     /**
      * 获取优先级数值（用于排序）。
-     * <p>
-     * 注意：此方法声明为抽象方法，由实现类委托给 BakedModelDecorator 的默认实现。
-     * </p>
      *
      * @return 优先级数值
      */
-    int getPriorityValue();
+    default int getPriorityValue() {
+        return getPriority().value;
+    }
 }

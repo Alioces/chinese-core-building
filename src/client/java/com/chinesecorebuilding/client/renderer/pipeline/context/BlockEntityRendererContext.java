@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.client.renderer.pipeline;
+package com.chinesecorebuilding.client.renderer.pipeline.context;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.VertexConsumerProvider;

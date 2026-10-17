@@ -1,7 +1,7 @@
 package com.chinesecorebuilding.client.model.postProcessing;
 
-import com.chinesecorebuilding.client.renderer.pipeline.BakedModelContext;
-import com.chinesecorebuilding.client.renderer.pipeline.BakedModelDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.api.BakedModelDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BakedModelContext;
 import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;

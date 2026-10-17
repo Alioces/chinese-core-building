@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.client.renderer.pipeline;
+package com.chinesecorebuilding.client.renderer.pipeline.decorator;
 
 import com.chinesecorebuilding.util.AnchorPoint;
 import com.chinesecorebuilding.util.BakedModelSpec;

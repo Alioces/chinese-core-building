@@ -1,4 +1,4 @@
-package com.chinesecorebuilding.client.renderer.pipeline;
+package com.chinesecorebuilding.client.renderer.pipeline.api;
 
 import net.minecraft.block.BlockState;
 

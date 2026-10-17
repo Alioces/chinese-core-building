@@ -4,7 +4,7 @@ import com.chinesecorebuilding.util.AnchorPoint;
 import com.chinesecorebuilding.util.BakedModelSpec;
 import com.chinesecorebuilding.util.Transform;
 import com.chinesecorebuilding.util.handler.SubModelHandler;
-import com.chinesecorebuilding.client.renderer.pipeline.SubModelRendererBase;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.SubModelRendererBase;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;

@@ -1,7 +1,7 @@
 package com.chinesecorebuilding.client.model.postProcessing;
 
 import com.chinesecorebuilding.block.properties.model.Offset;
-import com.chinesecorebuilding.client.renderer.pipeline.OffsetDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.OffsetDecorator;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
 

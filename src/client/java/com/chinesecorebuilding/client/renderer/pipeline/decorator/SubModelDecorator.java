@@ -1,5 +1,8 @@
-package com.chinesecorebuilding.client.renderer.pipeline;
+package com.chinesecorebuilding.client.renderer.pipeline.decorator;
 
+import com.chinesecorebuilding.client.renderer.pipeline.api.BakedModelDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.api.UnifiedRenderDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BakedModelContext;
 import com.chinesecorebuilding.util.AnchorPoint;
 import com.chinesecorebuilding.util.BakedModelSpec;
 import com.chinesecorebuilding.util.handler.SubModelHandler;
@@ -91,7 +94,7 @@ public class SubModelDecorator extends SubModelRendererBase implements BakedMode
     }
 
     @Override
-    protected BakedModel loadModelWithFallback(Identifier modelId) {
+    protected net.minecraft.client.render.model.BakedModel loadModelWithFallback(Identifier modelId) {
         return loadModelViaManager(modelId);
     }
 

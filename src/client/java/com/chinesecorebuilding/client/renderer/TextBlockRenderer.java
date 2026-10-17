@@ -2,9 +2,9 @@ package com.chinesecorebuilding.client.renderer;
 
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
-import com.chinesecorebuilding.client.renderer.pipeline.BlockEntityDecorator;
-import com.chinesecorebuilding.client.renderer.pipeline.BlockEntityRendererContext;
-import com.chinesecorebuilding.client.renderer.pipeline.TextDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.api.BlockEntityDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BlockEntityRendererContext;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;

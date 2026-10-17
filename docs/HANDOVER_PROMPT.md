@@ -182,7 +182,7 @@ public class CustomBlock extends Block {
 - 具体逻辑完全归接口所有，每个接口的 `default` 方法实现自己的职责
 - 新增能力 = 新增接口 + CustomBlock 补一行 `instanceof` 检查，零样板代码
 
-### 4.3 客户端模型管线 —— 两阶段 + 插件链
+### 4.3 客户端模型管线 —— 两阶段 + 插件链 + 装饰器
 
 ```
 ModelPluginRegistry.registerAll()
@@ -202,6 +202,10 @@ ModelPluginRegistry.registerAll()
 
 最终包装顺序（从外到内）:
 Offset(Rotation(Text(SubModel(原模型))))
+
+装饰器管线（UnifiedRenderPipelineRegistry）:
+  OffsetDecorator(100) → RotationDecorator(0) → TextDecorator(-500) → SubModelDecorator(-1000) → 原始模型
+  两条渲染管线（BakedModel / BlockEntityRenderer）共享装饰器实例
 ```
 
 **静态 vs 动态分流**：
@@ -234,7 +238,8 @@ Layer 0 (main)  接口声明    Rotatable, Directional, SubModelProvider...
 Layer 1 (main)  函数式处理器  SubModelHandler, TextureOverrideHandler...
 Layer 2 (main)  数据容器    BakedModelSpec, BakeContext, AnchorPoint
 Layer 3 (client) 插件链    5 个 ModelBakePlugin，按优先级执行
-Layer 4 (client) 后处理    SubModelBakedModel, RotationBakedModel...
+Layer 4 (client) 后处理    SubModelBakedModel, RotationBakedModel, DecoratorBakedModel(基类)...
+Layer 5 (client) 装饰器管线  UnifiedRenderPipelineRegistry + 装饰器链
 ```
 
 ### 5.2 两阶段时序
@@ -248,9 +253,44 @@ Layer 4 (client) 后处理    SubModelBakedModel, RotationBakedModel...
   DECORATOR 层: SubModelBakedModel + TextBakedModel   (内层)
   TRANSFORMER 层: RotationBakedModel + OffsetBakedModel (外层)
   最终: Offset(Rotation(Text/SubModel(Original)))
+
+[装饰器管线] UnifiedRenderPipelineRegistry.initialize()
+  注册: TextDecorator, RotationDecorator, OffsetDecorator
+  装饰顺序: Offset(100) → Rotation(0) → Text(-500) → SubModel(-1000) → 原始模型
+  两条管线共享装饰器实例，保证变换逻辑一致
 ```
 
-### 5.3 静态/动态分流
+### 5.3 装饰器管线架构（2026-10-17 新增）
+
+**背景**：原有 BakedModel 管线和 BlockEntityRenderer 管线的变换逻辑各自独立实现，存在代码重复和变换不一致的风险。
+
+**方案**：采用装饰器设计模式，统一两条渲染管线：
+
+```
+pipeline/
+├── api/                          # 装饰器接口
+│   ├── UnifiedRenderDecorator    # 统一接口 + Priority 枚举
+│   ├── BakedModelDecorator       # BakedModel 管线接口
+│   └── BlockEntityDecorator      # BlockEntity 管线接口
+├── context/                      # 渲染上下文
+│   ├── BakedModelContext         # emitBlockQuads 参数封装
+│   └── BlockEntityRendererContext # BlockEntityRenderer 参数封装
+├── decorator/                    # 装饰器实现
+│   ├── OffsetDecorator           # 偏移变换
+│   ├── RotationDecorator         # 旋转变换
+│   ├── TextDecorator             # 文字渲染
+│   ├── SubModelDecorator         # 子模型渲染
+│   └── SubModelRendererBase      # 子模型公共基类
+└── UnifiedRenderPipelineRegistry # 注册中心
+```
+
+**后处理包装器重构**：`OffsetBakedModel` 和 `RotationBakedModel` 继承 `DecoratorBakedModel<D>` 基类，消除约 60 行重复代码。
+
+**子模型渲染重构**：`SubModelDecorator` 和 `SubModelBakedModel` 共享 `SubModelRendererBase` 基类，消除约 150 行重复代码。
+
+详见 [RENDERING_PIPELINE_PROPOSAL.md §7](./RENDERING_PIPELINE_PROPOSAL.md#7-装饰器模式重构2026-10-17)。
+
+### 5.4 静态/动态分流
 
 ```
 方块实现了 DynamicModelDecorator?
@@ -457,7 +497,11 @@ $env:JAVA_HOME="E:\Java-jdk\21"
 | `src/client/.../model/ModelPluginRegistry.java` | 两阶段注册入口（DECORATOR → TRANSFORMER） |
 | `src/client/.../model/ModelBakePluginRegistry.java` | 5-PLUGIN 烘焙链（按优先级排序） |
 | `src/client/.../model/plugin/` | 5 个 BakePlugin 实现 |
-| `src/client/.../model/postProcessing/` | 4 个 BakedModel 包装器 |
+| `src/client/.../model/postProcessing/` | 4 个 BakedModel 包装器 + DecoratorBakedModel 基类 |
+| `src/client/.../renderer/pipeline/api/` | 装饰器接口（UnifiedRenderDecorator / BakedModelDecorator / BlockEntityDecorator） |
+| `src/client/.../renderer/pipeline/context/` | 渲染上下文（BakedModelContext / BlockEntityRendererContext） |
+| `src/client/.../renderer/pipeline/decorator/` | 装饰器实现（Offset/Rotation/Text/SubModel + SubModelRendererBase） |
+| `src/client/.../renderer/pipeline/UnifiedRenderPipelineRegistry.java` | 装饰器注册与链式组装 |
 | `src/client/.../ChineseCoreBuildingClient.java` | 客户端 6 步注册流程 |
 | `apiWiki.md` | 完整 API 文档 + 接口层次图 + 使用示例 |
 | `HANDOVER_PROMPT.md` | 本文档——项目交接提示词 |

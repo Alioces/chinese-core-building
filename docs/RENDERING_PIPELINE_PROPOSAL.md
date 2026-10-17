@@ -1,6 +1,6 @@
 # 渲染管线技术方案与实施报告
 
-> 版本：2026-09-18 · 状态：反映当前代码实际实现
+> 版本：2026-10-17 · 状态：反映当前代码实际实现
 
 ---
 
@@ -34,8 +34,18 @@
 ├──────────────────────────────────────────────────────────────┤
 │  Layer 4: 后处理包装 (src/client/.../model/postProcessing/)  │
 │  SubModelBakedModel / RotationBakedModel / OffsetBakedModel  │
-│  / TextBakedModel                                            │
+│  / TextBakedModel / DecoratorBakedModel(基类)                │
 │  → modifyModelAfterBake 阶段：链式包装原模型                 │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 5: 装饰器管线 (src/client/.../renderer/pipeline/)     │
+│  api/: UnifiedRenderDecorator / BakedModelDecorator /        │
+│        BlockEntityDecorator                                  │
+│  context/: BakedModelContext / BlockEntityRendererContext    │
+│  decorator/: OffsetDecorator / RotationDecorator /           │
+│              TextDecorator / SubModelDecorator /             │
+│              SubModelRendererBase                            │
+│  UnifiedRenderPipelineRegistry: 装饰器注册与链式组装         │
+│  → 统一 BakedModel 和 BlockEntityRenderer 两条渲染管线       │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -296,7 +306,97 @@ public class TestLightBulbBlock extends CustomBlock
 
 ---
 
-## 7. 附录：原版模型纹理变量参考
+## 7. 装饰器模式重构（2026-10-17）
+
+### 7.1 背景
+
+原有架构中，BakedModel 管线（`postProcessing/*.java`）和 BlockEntityRenderer 管线（`TextBlockRenderer`）的变换逻辑（旋转/偏移）各自独立实现，存在代码重复和变换不一致的风险。
+
+### 7.2 重构方案
+
+采用**装饰器设计模式**，将两条渲染管线统一到同一套装饰器链中：
+
+```
+装饰器接口层 (pipeline/api/)
+├── UnifiedRenderDecorator<T, R>   — 统一装饰器接口 + Priority 枚举
+├── BakedModelDecorator<R>         — BakedModel 管线专用接口
+└── BlockEntityDecorator<R>        — BlockEntity 管线专用接口
+
+渲染上下文层 (pipeline/context/)
+├── BakedModelContext              — 封装 emitBlockQuads 参数
+└── BlockEntityRendererContext<T>  — 封装 BlockEntityRenderer 参数
+
+装饰器实现层 (pipeline/decorator/)
+├── OffsetDecorator                — 偏移变换（同时实现两个接口）
+├── RotationDecorator              — 旋转变换（同时实现两个接口）
+├── TextDecorator                  — 文字渲染（同时实现两个接口）
+├── SubModelDecorator              — 子模型渲染（仅 BakedModel 管线）
+└── SubModelRendererBase           — 子模型渲染公共基类
+
+注册中心 (pipeline/)
+└── UnifiedRenderPipelineRegistry  — 装饰器注册、链式组装、自动分发
+```
+
+### 7.3 装饰器链结构
+
+```
+OffsetDecorator (Priority.OFFSET = 100)
+  └─ RotationDecorator (Priority.ROTATION = 0)
+     └─ TextDecorator (Priority.TEXT = -500)
+        └─ SubModelDecorator (Priority.SUB_MODEL = -1000)
+           └─ 原始模型/渲染器
+```
+
+**优先级规则**：数值越小越先执行（越靠近内层）。
+
+### 7.4 后处理包装器重构
+
+`OffsetBakedModel` 和 `RotationBakedModel` 现在继承公共基类 `DecoratorBakedModel<D>`，消除约 60 行重复代码：
+
+```java
+// 重构前：每个类独立实现 emitBlockQuads + getQuads
+public class OffsetBakedModel extends ForwardingBakedModel {
+    private static final OffsetDecorator DECORATOR = new OffsetDecorator();
+    @Override
+    public void emitBlockQuads(...) { /* 重复逻辑 */ }
+    @Override
+    public List<BakedQuad> getQuads(...) { return wrapped.getQuads(...); }
+}
+
+// 重构后：继承公共基类，仅声明装饰器和条件
+public class OffsetBakedModel extends DecoratorBakedModel<OffsetDecorator> {
+    private static final OffsetDecorator DECORATOR = new OffsetDecorator();
+    public OffsetBakedModel(BakedModel original) {
+        super(original, DECORATOR, state -> state.getBlock() instanceof Offset);
+    }
+}
+```
+
+### 7.5 子模型渲染重构
+
+`SubModelDecorator` 和 `SubModelBakedModel` 共享 `SubModelRendererBase` 基类，消除约 150 行重复代码：
+
+| 提取的公共逻辑 | 说明 |
+|---------------|------|
+| `modelCache` | 线程安全的模型缓存（ConcurrentHashMap） |
+| `deferredCache` | 延迟求值缓存（BlockState → SubModelEntry 列表） |
+| `resolveSubModelEntries()` | 解析子模型条目（支持立即/延迟两种模式） |
+| `initializeSubModels()` | 延迟初始化（线程安全，仅执行一次） |
+| `loadModelWithFallback()` | 模型加载与回退策略 |
+| `isMissingModel()` | 缺失模型判断 |
+
+### 7.6 关键设计决策
+
+| 决策 | 说明 |
+|------|------|
+| **分离两个装饰器接口** | Java 泛型限制：一个类不能实现相同接口不同泛型参数，因此创建 `BakedModelDecorator` 和 `BlockEntityDecorator` 两个独立接口 |
+| **共享装饰器实例** | Offset/Rotation/Text 装饰器在两条管线间共享，保证变换逻辑完全一致 |
+| **BlockEntityDecorator.getPriorityValue() 声明为抽象** | 避免与 BakedModelDecorator 的默认方法继承冲突，由实现类显式委托 |
+| **DecoratorBakedModel 泛型约束** | `D extends BakedModelDecorator<Void>`，确保类型安全 |
+
+---
+
+## 8. 附录：原版模型纹理变量参考
 
 | 模型 | JSON 路径 | 纹理变量 | 可用贴图 |
 |------|----------|----------|----------|

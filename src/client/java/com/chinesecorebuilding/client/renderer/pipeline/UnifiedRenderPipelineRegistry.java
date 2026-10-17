@@ -1,5 +1,12 @@
 package com.chinesecorebuilding.client.renderer.pipeline;
 
+import com.chinesecorebuilding.client.renderer.pipeline.api.BakedModelDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.api.BlockEntityDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BakedModelContext;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BlockEntityRendererContext;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.OffsetDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.RotationDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;

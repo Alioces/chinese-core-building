@@ -1,6 +1,11 @@
-package com.chinesecorebuilding.client.renderer.pipeline;
+package com.chinesecorebuilding.client.renderer.pipeline.decorator;
 
 import com.chinesecorebuilding.block.properties.model.Offset;
+import com.chinesecorebuilding.client.renderer.pipeline.api.BakedModelDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.api.BlockEntityDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.api.UnifiedRenderDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BakedModelContext;
+import com.chinesecorebuilding.client.renderer.pipeline.context.BlockEntityRendererContext;
 import net.minecraft.block.BlockState;
 
 import java.util.function.Function;

@@ -1,7 +1,7 @@
 package com.chinesecorebuilding.client.model.postProcessing;
 
 import com.chinesecorebuilding.block.properties.model.Rotatable;
-import com.chinesecorebuilding.client.renderer.pipeline.RotationDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.decorator.RotationDecorator;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
 
