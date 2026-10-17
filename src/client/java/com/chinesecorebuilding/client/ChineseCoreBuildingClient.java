@@ -7,6 +7,7 @@ import com.chinesecorebuilding.block.properties.model.Layered;
 import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
+import com.chinesecorebuilding.client.gui.GuiScreenRegistry;
 import com.chinesecorebuilding.client.gui.TextBlockScreen;
 import com.chinesecorebuilding.client.gui.SingleLineScreen;
 import com.chinesecorebuilding.client.model.ModelBakePluginRegistry;
@@ -21,9 +22,11 @@ import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -97,31 +100,38 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         //    但 TextBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
         BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
 
+        // 6.5 注册 GUI 屏幕工厂（遵循开闭原则：新增 GUI 类型只需在此注册，回调代码无需修改）
+        GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_MULTI_LINE, TextBlockScreen::new);
+        GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_SINGLE_LINE, SingleLineScreen::new);
+
         // 7. 交互回调：客户端右键方块时检测 GuiInteractive
-        //    检查前置条件后打开对应的文字编辑 GUI。不在 main 源集引用 client 类，
-        //    保持 main → client 的单向依赖。
+        //    检查前置条件后通过 GuiScreenRegistry 查找对应 Screen 工厂创建实例。
+        //    不在 main 源集引用 client 类，保持 main → client 的单向依赖。
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!world.isClient) return ActionResult.PASS;   // 只在客户端处理
             if (hand != Hand.MAIN_HAND) return ActionResult.PASS;   // 只处理主手右键
 
             BlockPos pos = hit.getBlockPos();
             Block block = world.getBlockState(pos).getBlock();
-            
+
             // 检查 GuiInteractive（支持前置检查和回调）
             if (block instanceof GuiInteractive guiInteractive) {
                 // 前置条件检查
                 if (guiInteractive.canOpenGui(player, pos)) {
-                    // 根据方块类型选择对应的文字编辑 GUI
-                    net.minecraft.client.gui.screen.Screen screen;
-                    if (block instanceof SingleLineSignBlock) {
-                        screen = new SingleLineScreen(pos);
-                    } else if (block instanceof SignTextProvider) {
-                        screen = new TextBlockScreen(pos);
-                    } else {
-                        screen = new TextBlockScreen(pos);
+                    // 通过注册表创建 Screen，支持自定义标题
+                    String guiType = guiInteractive.getGuiType();
+                    Text title = guiInteractive.getGuiTitle(pos);
+                    Screen screen = GuiScreenRegistry.createScreen(guiType, pos, title);
+
+                    if (screen != null) {
+                        MinecraftClient.getInstance().setScreen(screen);
+                        // 回调逻辑
+                        guiInteractive.onGuiOpened(player, pos);
+                        return ActionResult.SUCCESS;
                     }
+                    // 类型未注册时 fallback 到多行编辑器
+                    screen = new TextBlockScreen(pos, title);
                     MinecraftClient.getInstance().setScreen(screen);
-                    // 回调逻辑
                     guiInteractive.onGuiOpened(player, pos);
                     return ActionResult.SUCCESS;
                 }

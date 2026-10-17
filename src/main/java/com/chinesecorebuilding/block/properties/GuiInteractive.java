@@ -1,6 +1,7 @@
 package com.chinesecorebuilding.block.properties;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
 /**
@@ -11,17 +12,20 @@ import net.minecraft.util.math.BlockPos;
  * <ol>
  *   <li>打开 GUI 的前置条件检查（如权限、距离、物品等）</li>
  *   <li>打开后的回调逻辑（如播放音效、触发粒子等）</li>
+ *   <li>GUI 类型标识（用于客户端查找对应的 Screen 工厂）</li>
+ *   <li>GUI 窗口标题（可选，返回 null 时使用默认标题）</li>
  * </ol>
  * </p>
  * <p>
  * 本接口是公共文字功能基础设施的一部分，任何需要 GUI 编辑功能的方块都应实现此接口。
- * 实现此接口并配合 {@link SignTextProvider} 使用时，方块将自动获得文字编辑 GUI。
+ * 实现此接口并配合 {@link com.chinesecorebuilding.block.properties.model.SignTextProvider} 使用时，
+ * 方块将自动获得文字编辑 GUI。
  * </p>
  * <p>
- * GUI 实例的创建由客户端 {@code UseBlockCallback} 根据方块类型自动处理。
- * 默认情况下，实现此接口和 {@link SignTextProvider} 的方块会打开
- * {@code SignBlockScreen}（多行文字编辑界面）。
- * 如需自定义 GUI，请在客户端代码中注册自定义处理器。
+ * GUI 实例的创建由客户端 {@code GuiScreenRegistry} 根据 {@link #getGuiType()} 返回值自动处理。
+ * 默认返回 {@code "multi_line"}（多行文字编辑界面）。
+ * 单行文字方块应返回 {@code "single_line"}。
+ * 自定义 GUI 类型需在客户端初始化时向 {@code GuiScreenRegistry} 注册工厂。
  * </p>
  * <p>
  * 使用场景：
@@ -35,6 +39,16 @@ import net.minecraft.util.math.BlockPos;
  * 使用方式：
  * <pre>
  * public class MyTextBlock extends CustomBlock implements GuiInteractive, SignTextProvider {
+ *     &#64;Override
+ *     public String getGuiType() {
+ *         return "multi_line"; // 或 "single_line" 或自定义类型
+ *     }
+ *
+ *     &#64;Override
+ *     public Text getGuiTitle(BlockPos pos) {
+ *         return Text.literal("我的自定义标题"); // 或返回 null 使用默认标题
+ *     }
+ *
  *     &#64;Override
  *     public boolean canOpenGui(PlayerEntity player, BlockPos pos) {
  *         // 可选：添加权限检查、距离检查等
@@ -51,8 +65,57 @@ import net.minecraft.util.math.BlockPos;
  *
  * @see Interactive
  * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
+ * @see com.chinesecorebuilding.client.gui.GuiScreenRegistry
  */
 public interface GuiInteractive extends Interactive {
+
+    /**
+     * 多行文字编辑 GUI 类型标识符。
+     */
+    String GUI_TYPE_MULTI_LINE = "multi_line";
+
+    /**
+     * 单行文字编辑 GUI 类型标识符。
+     */
+    String GUI_TYPE_SINGLE_LINE = "single_line";
+
+    /**
+     * 返回此方块对应的 GUI 类型标识符。
+     * <p>
+     * 客户端根据此返回值查找对应的 Screen 工厂并创建实例。
+     * 内置类型：
+     * <ul>
+     *   <li>{@link #GUI_TYPE_MULTI_LINE} — 多行文字编辑器</li>
+     *   <li>{@link #GUI_TYPE_SINGLE_LINE} — 单行文字编辑器</li>
+     * </ul>
+     * 自定义类型需在客户端初始化时向 {@code GuiScreenRegistry} 注册。
+     * </p>
+     * <p>
+     * 默认返回 {@link #GUI_TYPE_MULTI_LINE}。
+     * </p>
+     *
+     * @return GUI 类型标识符
+     */
+    default String getGuiType() {
+        return GUI_TYPE_MULTI_LINE;
+    }
+
+    /**
+     * 返回此方块 GUI 的窗口标题。
+     * <p>
+     * 返回 null 时使用 Screen 的默认标题。
+     * 可用于为不同方块实例动态生成标题（如显示方块名称、位置等）。
+     * </p>
+     * <p>
+     * 默认返回 null（使用默认标题）。
+     * </p>
+     *
+     * @param pos 方块位置
+     * @return 窗口标题，或 null 使用默认标题
+     */
+    default Text getGuiTitle(BlockPos pos) {
+        return null;
+    }
 
     /**
      * 检查是否允许打开 GUI。

@@ -59,15 +59,35 @@ public class TextBlockScreen extends AbstractTextScreen {
     private int listX, listLabelY, btnRowY, listY, listBottom;
 
     /**
+     * 默认窗口标题。
+     */
+    private static final Text DEFAULT_TITLE = Text.literal("文字编辑器");
+
+    /**
      * 构造函数。
      * <p>
      * 从服务端同步过来的文字行通过 {@link SignBlockClientService#readLines} 拷贝一份副本。
+     * 使用默认标题。
      * </p>
      *
      * @param blockPos 目标文字方块位置
      */
     public TextBlockScreen(BlockPos blockPos) {
-        super(Text.literal("编辑文字"), blockPos, SignBlockClientService.readLines(blockPos));
+        this(blockPos, DEFAULT_TITLE);
+    }
+
+    /**
+     * 构造函数（可指定标题）。
+     * <p>
+     * 从服务端同步过来的文字行通过 {@link SignBlockClientService#readLines} 拷贝一份副本。
+     * 由 {@link GuiScreenRegistry} 调用，传入方块指定的标题。
+     * </p>
+     *
+     * @param blockPos 目标文字方块位置
+     * @param title    窗口标题（为 null 时使用默认标题）
+     */
+    public TextBlockScreen(BlockPos blockPos, Text title) {
+        super(title != null ? title : DEFAULT_TITLE, blockPos, SignBlockClientService.readLines(blockPos));
     }
 
     /**

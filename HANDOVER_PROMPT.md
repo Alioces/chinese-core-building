@@ -141,7 +141,7 @@ Block (Minecraft)
   │
   ├── Layered         → getRenderLayerType()  CUTOUT / TRANSLUCENT
   ├── Interactive     → getInteraction()      BlockInteraction 函数式处理器
-  │     └── GuiInteractive → canOpenGui() / onGuiOpened()
+  │     └── GuiInteractive → getGuiType() / getGuiTitle() / canOpenGui() / onGuiOpened()
   ├── OffsetFunction  → 静态偏移 @FunctionalInterface
   └── BlockInteraction → 交互处理 @FunctionalInterface
 ```

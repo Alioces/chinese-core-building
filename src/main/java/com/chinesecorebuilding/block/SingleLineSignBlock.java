@@ -147,4 +147,18 @@ public class SingleLineSignBlock extends CustomBlock
     public boolean isSingleLineMode() {
         return true;
     }
+
+    /**
+     * 返回此方块对应的 GUI 类型标识符。
+     * <p>
+     * 单行文字方块返回 {@link GuiInteractive#GUI_TYPE_SINGLE_LINE}，
+     * 客户端据此创建 {@link com.chinesecorebuilding.client.gui.SingleLineScreen}。
+     * </p>
+     *
+     * @return {@link GuiInteractive#GUI_TYPE_SINGLE_LINE}
+     */
+    @Override
+    public String getGuiType() {
+        return GUI_TYPE_SINGLE_LINE;
+    }
 }

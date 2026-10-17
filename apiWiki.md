@@ -64,6 +64,8 @@ Block (Minecraft)
   │     └── blocksDefaultInteraction() → boolean (阻断原版默认行为)
   │           │
   │           └── GuiInteractive (继承，特化客户端 GUI 交互)
+  │                 ├── getGuiType() → String (GUI 类型标识符，默认 "multi_line")
+  │                 ├── getGuiTitle(BlockPos) → Text (窗口标题，默认 null)
   │                 ├── shouldOpenGui() → boolean (始终返回 true)
   │                 ├── canOpenGui(PlayerEntity, BlockPos) → boolean (前置条件检查)
   │                 └── onGuiOpened(PlayerEntity, BlockPos) → void (打开后回调)
@@ -285,26 +287,38 @@ public class MyBlock extends CustomBlock implements Interactive {
 
 | 项目 | 说明 |
 |------|------|
-| **用途** | 继承 `Interactive`，特化客户端右键打开 GUI 的逻辑，支持前置条件检查和打开后回调 |
+| **用途** | 继承 `Interactive`，特化客户端右键打开 GUI 的逻辑，支持前置条件检查、打开后回调、GUI 类型声明和自定义标题 |
 | **继承** | `extends Interactive` |
 | **依赖** | 无（可独立使用） |
-| **消费方** | `UseBlockCallback`（客户端 GUI 触发） |
+| **消费方** | `GuiScreenRegistry`（客户端 Screen 工厂注册表） |
 
 **核心方法**：
 
 | 方法 | 返回值 | 说明 |
 |------|--------|------|
+| `getGuiType()` | `String` | GUI 类型标识符，默认 `"multi_line"`，内置常量 `GUI_TYPE_MULTI_LINE` / `GUI_TYPE_SINGLE_LINE` |
+| `getGuiTitle(BlockPos)` | `Text` | 窗口标题，返回 null 时使用 Screen 默认标题 |
 | `canOpenGui(PlayerEntity, BlockPos)` | `boolean` | 打开 GUI 前的前置条件检查（权限、距离等），默认 true |
 | `onGuiOpened(PlayerEntity, BlockPos)` | `void` | GUI 打开后的回调逻辑（音效、粒子等），默认无操作 |
 | `shouldOpenGui()` | `boolean` | 始终返回 true（标记需要打开 GUI） |
 
 **与 Interactive 的区别**：
 - `Interactive` 只负责服务端交互和默认行为阻断
-- `GuiInteractive` 专门处理客户端 GUI 交互，提供前置检查和回调机制
+- `GuiInteractive` 专门处理客户端 GUI 交互，提供类型声明、标题自定义、前置检查和回调机制
 
 **典型实现**：
 ```java
 public class MyTextBlock extends CustomBlock implements GuiInteractive, TextProvider {
+    @Override
+    public String getGuiType() {
+        return GUI_TYPE_SINGLE_LINE; // 使用单行编辑器
+    }
+
+    @Override
+    public Text getGuiTitle(BlockPos pos) {
+        return Text.literal("我的自定义标题"); // 或返回 null 使用默认标题
+    }
+
     @Override
     public boolean canOpenGui(PlayerEntity player, BlockPos pos) {
         // 示例：只有 OP 玩家才能打开编辑界面
@@ -324,9 +338,34 @@ public class MyTextBlock extends CustomBlock implements GuiInteractive, TextProv
 UseBlockCallback 检测到 GuiInteractive
   → 调用 canOpenGui(player, pos) 检查前置条件
     → 若返回 false → 阻断，返回 SUCCESS
-    → 若返回 true → 打开 TextBlockScreen
+    → 若返回 true
+      → 读取 guiType = guiInteractive.getGuiType()
+      → 读取 title = guiInteractive.getGuiTitle(pos)
+      → GuiScreenRegistry.createScreen(guiType, pos, title)
+        → 查找对应工厂函数 → 创建 Screen 实例
+        → 若类型未注册 → fallback 到 TextBlockScreen
+      → MinecraftClient.setScreen(screen)
       → 调用 onGuiOpened(player, pos) 执行回调
       → 返回 SUCCESS
+```
+
+**新增 GUI 类型（开闭原则实践）**：
+```java
+// 1. 新建 Screen 类
+public class ConfigScreen extends Screen {
+    public ConfigScreen(BlockPos pos, Text title) {
+        super(title != null ? title : Text.literal("配置面板"));
+    }
+}
+
+// 2. 在客户端初始化时注册工厂
+GuiScreenRegistry.register("config", ConfigScreen::new);
+
+// 3. 方块声明使用此类型
+public class ConfigBlock extends CustomBlock implements GuiInteractive {
+    @Override
+    public String getGuiType() { return "config"; }
+}
 ```
 
 ---
@@ -458,8 +497,15 @@ ChineseCoreBuildingClient.onInitializeClient()
 │         TextBlockRenderer::new
 │     )
 │
+├── GuiScreenRegistry
+│     ├── register(GUI_TYPE_MULTI_LINE, TextBlockScreen::new)
+│     ├── register(GUI_TYPE_SINGLE_LINE, SingleLineScreen::new)
+│     └── 新增 GUI 类型只需在此注册，UseBlockCallback 无需修改
+│
 └── UseBlockCallback.EVENT.register(...)
-      └── 客户端右键 → Interactive.shouldOpenGui() → 打开 TextBlockScreen
+      └── 客户端右键 → GuiInteractive
+            → getGuiType() + getGuiTitle()
+            → GuiScreenRegistry.createScreen() → 打开对应 Screen
 ```
 
 ### 渲染管线对比
