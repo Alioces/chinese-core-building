@@ -1,5 +1,6 @@
 package com.chinesecorebuilding.client;
 
+import com.chinesecorebuilding.block.SimpleTextSignBlock;
 import com.chinesecorebuilding.block.SingleLineSignBlock;
 import com.chinesecorebuilding.block.TestSignBlock;
 import com.chinesecorebuilding.block.properties.GuiInteractive;
@@ -8,6 +9,7 @@ import com.chinesecorebuilding.block.properties.model.Offset;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
 import com.chinesecorebuilding.client.gui.GuiScreenRegistry;
+import com.chinesecorebuilding.client.gui.SimpleTextScreen;
 import com.chinesecorebuilding.client.gui.TextBlockScreen;
 import com.chinesecorebuilding.client.gui.SingleLineScreen;
 import com.chinesecorebuilding.client.model.ModelBakePluginRegistry;
@@ -103,10 +105,12 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         //    但 TextBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
         BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
         BlockEntityRendererFactories.register(SingleLineSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
+        BlockEntityRendererFactories.register(SimpleTextSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
 
         // 6.5 注册 GUI 屏幕工厂（遵循开闭原则：新增 GUI 类型只需在此注册，回调代码无需修改）
         GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_MULTI_LINE, TextBlockScreen::new);
         GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_SINGLE_LINE, SingleLineScreen::new);
+        GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_SIMPLE, SimpleTextScreen::new);
 
         // 7. 交互回调：客户端右键方块时检测 GuiInteractive
         //    检查前置条件后通过 GuiScreenRegistry 查找对应 Screen 工厂创建实例。

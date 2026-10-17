@@ -207,6 +207,9 @@ public class ChineseCoreBuildingBlocks {
     /** 单行文字方块测试（公共文字功能单行模式实现） */
     public static final Block single_line_sign = SingleLineSignBlock.INSTANCE;
 
+    /** 简化版文字方块测试（简化 GUI，隐藏位置参数） */
+    public static final Block simple_text_sign = SimpleTextSignBlock.INSTANCE;
+
     /**
      * 统一注册方块及其对应的方块物品。
      * <p>

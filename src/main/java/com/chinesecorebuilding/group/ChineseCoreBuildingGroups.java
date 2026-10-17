@@ -149,6 +149,7 @@ public class ChineseCoreBuildingGroups {
                         entries.add(ChineseCoreBuildingBlocks.wine_cabinet.asItem());
                         entries.add(ChineseCoreBuildingBlocks.test_sign.asItem());
                         entries.add(ChineseCoreBuildingBlocks.single_line_sign.asItem());
+                        entries.add(ChineseCoreBuildingBlocks.simple_text_sign.asItem());
                     })
                     .build()
     );

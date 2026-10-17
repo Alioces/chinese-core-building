@@ -1,6 +1,7 @@
 package com.chinesecorebuilding;
 
 import com.chinesecorebuilding.block.ChineseCoreBuildingBlocks;
+import com.chinesecorebuilding.block.SimpleTextSignBlock;
 import com.chinesecorebuilding.block.SingleLineSignBlock;
 import com.chinesecorebuilding.block.TestSignBlock;
 import com.chinesecorebuilding.group.ChineseCoreBuildingGroups;
@@ -60,6 +61,7 @@ public class ChineseCoreBuildingMod implements ModInitializer {
 
         TestSignBlock.register();
         SingleLineSignBlock.register();
+        SimpleTextSignBlock.register();
 
         TextBlockService.registerReceiver();
 

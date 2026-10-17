@@ -80,6 +80,15 @@ public interface GuiInteractive extends Interactive {
     String GUI_TYPE_SINGLE_LINE = "single_line";
 
     /**
+     * 简化版文字编辑 GUI 类型标识符。
+     * <p>
+     * 隐藏位置参数控件，仅保留文字内容、颜色、缩放、发光开关。
+     * 适用于不需要自定义文字位置的场景。
+     * </p>
+     */
+    String GUI_TYPE_SIMPLE = "simple";
+
+    /**
      * 返回此方块对应的 GUI 类型标识符。
      * <p>
      * 客户端根据此返回值查找对应的 Screen 工厂并创建实例。
