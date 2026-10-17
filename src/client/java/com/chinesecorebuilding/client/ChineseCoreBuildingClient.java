@@ -19,6 +19,7 @@ import com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.RotationBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.TextBakedModel;
 import com.chinesecorebuilding.client.renderer.TextBlockRenderer;
+import com.chinesecorebuilding.client.renderer.pipeline.UnifiedRenderPipelineRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -69,6 +70,9 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
      */
     @Override
     public void onInitializeClient() {
+        // 0. 初始化统一渲染管线装饰器注册中心
+        UnifiedRenderPipelineRegistry.initialize();
+
         // 1. 渲染层注册：遍历所有 Layered 方块，自动映射到对应 RenderLayer
         registerRenderLayers();
 
