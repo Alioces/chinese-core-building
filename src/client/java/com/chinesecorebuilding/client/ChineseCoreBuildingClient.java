@@ -28,7 +28,10 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.world.World;
 import net.minecraft.util.math.BlockPos;
 
 /**
@@ -107,38 +110,54 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         // 7. 交互回调：客户端右键方块时检测 GuiInteractive
         //    检查前置条件后通过 GuiScreenRegistry 查找对应 Screen 工厂创建实例。
         //    不在 main 源集引用 client 类，保持 main → client 的单向依赖。
-        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (!world.isClient) return ActionResult.PASS;   // 只在客户端处理
-            if (hand != Hand.MAIN_HAND) return ActionResult.PASS;   // 只处理主手右键
+        UseBlockCallback.EVENT.register((player, world, hand, hit) ->
+                handleGuiInteraction(player, world, hand, hit));
+    }
 
-            BlockPos pos = hit.getBlockPos();
-            Block block = world.getBlockState(pos).getBlock();
+    /**
+     * 处理 GUI 交互逻辑。
+     * <p>
+     * 使用卫语句（early return）避免深层嵌套，
+     * 检查前置条件后通过 GuiScreenRegistry 查找对应 Screen 工厂创建实例。
+     * 类型未注册时 fallback 到多行编辑器。
+     * </p>
+     *
+     * @param player 操作玩家
+     * @param world  方块所在世界
+     * @param hand   使用的手（主/副）
+     * @param hit    命中结果
+     * @return 交互结果
+     */
+    private static ActionResult handleGuiInteraction(
+            PlayerEntity player,
+            World world,
+            Hand hand,
+            BlockHitResult hit) {
+        if (!world.isClient) return ActionResult.PASS;
+        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
 
-            // 检查 GuiInteractive（支持前置检查和回调）
-            if (block instanceof GuiInteractive guiInteractive) {
-                // 前置条件检查
-                if (guiInteractive.canOpenGui(player, pos)) {
-                    // 通过注册表创建 Screen，支持自定义标题
-                    String guiType = guiInteractive.getGuiType();
-                    Text title = guiInteractive.getGuiTitle(pos);
-                    Screen screen = GuiScreenRegistry.createScreen(guiType, pos, title);
+        BlockPos pos = hit.getBlockPos();
+        Block block = world.getBlockState(pos).getBlock();
+        if (!(block instanceof GuiInteractive gui)) return ActionResult.PASS;
+        if (!gui.canOpenGui(player, pos)) return ActionResult.SUCCESS;
 
-                    if (screen != null) {
-                        MinecraftClient.getInstance().setScreen(screen);
-                        // 回调逻辑
-                        guiInteractive.onGuiOpened(player, pos);
-                        return ActionResult.SUCCESS;
-                    }
-                    // 类型未注册时 fallback 到多行编辑器
-                    screen = new TextBlockScreen(pos, title);
-                    MinecraftClient.getInstance().setScreen(screen);
-                    guiInteractive.onGuiOpened(player, pos);
-                    return ActionResult.SUCCESS;
-                }
-                return ActionResult.SUCCESS;   // 阻止后续逻辑
-            }
-            return ActionResult.PASS;
-        });
+        Screen screen = createScreenWithFallback(gui, pos);
+        MinecraftClient.getInstance().setScreen(screen);
+        gui.onGuiOpened(player, pos);
+        return ActionResult.SUCCESS;
+    }
+
+    /**
+     * 创建 Screen 实例，类型未注册时 fallback 到多行编辑器。
+     *
+     * @param gui  GUI 交互接口
+     * @param pos  方块位置
+     * @return Screen 实例
+     */
+    private static Screen createScreenWithFallback(GuiInteractive gui, BlockPos pos) {
+        Text title = gui.getGuiTitle(pos);
+        Screen screen = GuiScreenRegistry.createScreen(gui.getGuiType(), pos, title);
+        return screen != null ? screen : new TextBlockScreen(pos, title);
     }
 
     /**

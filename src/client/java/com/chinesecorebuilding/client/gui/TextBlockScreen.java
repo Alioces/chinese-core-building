@@ -43,6 +43,141 @@ public class TextBlockScreen extends AbstractTextScreen {
     private static final int SCROLLBAR_W = 6;
 
     /**
+     * 右侧面板最小宽度（像素）。
+     */
+    private static final int RIGHT_PANEL_MIN_W = 220;
+
+    /**
+     * 右侧面板高度（像素）。
+     */
+    private static final int RIGHT_PANEL_H = 210;
+
+    /**
+     * 面板 Y 坐标最小值（像素）。
+     */
+    private static final int PANEL_Y_MIN = 30;
+
+    /**
+     * 面板高度（像素）。
+     */
+    private static final int PANEL_H = 260;
+
+    /**
+     * 字段间距（像素）。
+     */
+    private static final int FIELD_SPACING = 4;
+
+    /**
+     * 位置输入框宽度（像素）。
+     */
+    private static final int POS_FIELD_W = 60;
+
+    /**
+     * 位置输入框间距（像素）。
+     */
+    private static final int POS_FIELD_GAP = 66;
+
+    /**
+     * 颜色输入框宽度（像素）。
+     */
+    private static final int COLOR_FIELD_W = 90;
+
+    /**
+     * 缩放输入框 X 偏移（像素）。
+     */
+    private static final int SCALE_FIELD_X = 114;
+
+    /**
+     * 缩放输入框宽度（像素）。
+     */
+    private static final int SCALE_FIELD_W = 56;
+
+    /**
+     * 颜色预览 X 偏移（像素）。
+     */
+    private static final int COLOR_PREVIEW_X_OFFSET = 95;
+
+    /**
+     * 发光按钮宽度（像素）。
+     */
+    private static final int GLOW_BTN_W = 110;
+
+    /**
+     * 添加/删除按钮宽度（像素）。
+     */
+    private static final int LIST_BTN_W = 80;
+
+    /**
+     * 删除按钮 X 偏移（像素）。
+     */
+    private static final int DEL_BTN_X_OFFSET = 90;
+
+    /**
+     * 保存/取消按钮宽度（像素）。
+     */
+    private static final int BOTTOM_BTN_W = 100;
+
+    /**
+     * 保存/取消按钮间距（像素）。
+     */
+    private static final int BOTTOM_BTN_GAP = 20;
+
+    /**
+     * 底部按钮 Y 偏移（像素）。
+     */
+    private static final int BOTTOM_BTN_Y_OFFSET = 34;
+
+    /**
+     * 文字输入框最大长度。
+     */
+    private static final int TEXT_MAX_LENGTH = 64;
+
+    /**
+     * 位置输入框最大长度。
+     */
+    private static final int POS_MAX_LENGTH = 8;
+
+    /**
+     * 缩放输入框最大长度。
+     */
+    private static final int SCALE_MAX_LENGTH = 6;
+
+    /**
+     * 列表预览最大显示长度。
+     */
+    private static final int LIST_PREVIEW_MAX_LEN = 22;
+
+    /**
+     * 列表预览截断长度。
+     */
+    private static final int LIST_PREVIEW_TRUNCATE_LEN = 20;
+
+    /**
+     * 滚动条滑块最小高度（像素）。
+     */
+    private static final int SCROLLBAR_THUMB_MIN_H = 12;
+
+    /**
+     * 滚动条内边距（像素）。
+     */
+    private static final int SCROLLBAR_PADDING = 1;
+
+    /**
+     * 面板内边距（像素）。
+     */
+    private static final int PANEL_PADDING = 4;
+
+    /**
+     * 标题 X 偏移（像素）。
+     */
+    private static final int TITLE_X_OFFSET = 60;
+
+    /**
+     * 标题 Y 坐标（像素）。
+     */
+    private static final int TITLE_Y = 10;
+
+    /**
      * 当前选中行索引。
      */
     private int selectedIndex = -1;
@@ -98,47 +233,47 @@ public class TextBlockScreen extends AbstractTextScreen {
         int w = width;
         int h = height;
 
-        rightPanelW = Math.max(220, w - LEFT_PANEL_W - MARGIN * 4);
+        rightPanelW = Math.max(RIGHT_PANEL_MIN_W, w - LEFT_PANEL_W - MARGIN * 4);
         rightPanelX = (w - LEFT_PANEL_W - rightPanelW - MARGIN) / 2 + LEFT_PANEL_W + MARGIN;
-        rightPanelY = Math.max(30, (h - 260) / 2);
+        rightPanelY = Math.max(PANEL_Y_MIN, (h - PANEL_H) / 2);
 
         listX = (w - LEFT_PANEL_W - rightPanelW - MARGIN) / 2;
         listLabelY = rightPanelY;
-        btnRowY = listLabelY + LABEL_H + 2;
-        listY = btnRowY + ROW_H + 2;
+        btnRowY = listLabelY + LABEL_H + FIELD_SPACING;
+        listY = btnRowY + ROW_H + FIELD_SPACING;
         listBottom = listY + LIST_AREA_H;
 
         int x = rightPanelX;
-        int y = rightPanelY + LABEL_H + LABEL_H + 4;
+        int y = rightPanelY + LABEL_H + LABEL_H + FIELD_SPACING;
 
         textField = new TextFieldWidget(textRenderer, x, y, rightPanelW, ROW_H, Text.literal(""));
         textField.setPlaceholder(Text.literal("输入文字内容"));
         addDrawable(textField); addSelectableChild(textField);
-        y += ROW_H + LABEL_H + 4;
+        y += ROW_H + LABEL_H + FIELD_SPACING;
 
-        posXField = new TextFieldWidget(textRenderer, x, y, 60, ROW_H, Text.literal(""));
+        posXField = new TextFieldWidget(textRenderer, x, y, POS_FIELD_W, ROW_H, Text.literal(""));
         posXField.setPlaceholder(Text.literal("X"));
-        posYField = new TextFieldWidget(textRenderer, x + 66, y, 60, ROW_H, Text.literal(""));
+        posYField = new TextFieldWidget(textRenderer, x + POS_FIELD_GAP, y, POS_FIELD_W, ROW_H, Text.literal(""));
         posYField.setPlaceholder(Text.literal("Y"));
-        posZField = new TextFieldWidget(textRenderer, x + 132, y, 60, ROW_H, Text.literal(""));
+        posZField = new TextFieldWidget(textRenderer, x + POS_FIELD_W + POS_FIELD_GAP, y, POS_FIELD_W, ROW_H, Text.literal(""));
         posZField.setPlaceholder(Text.literal("Z"));
         addDrawable(posXField); addSelectableChild(posXField);
         addDrawable(posYField); addSelectableChild(posYField);
         addDrawable(posZField); addSelectableChild(posZField);
-        y += ROW_H + LABEL_H + 4;
+        y += ROW_H + LABEL_H + FIELD_SPACING;
 
-        colorField = new TextFieldWidget(textRenderer, x, y, 90, ROW_H, Text.literal(""));
+        colorField = new TextFieldWidget(textRenderer, x, y, COLOR_FIELD_W, ROW_H, Text.literal(""));
         colorField.setPlaceholder(Text.literal("#RRGGBB"));
-        scaleField = new TextFieldWidget(textRenderer, x + 114, y, 56, ROW_H, Text.literal(""));
+        scaleField = new TextFieldWidget(textRenderer, x + SCALE_FIELD_X, y, SCALE_FIELD_W, ROW_H, Text.literal(""));
         scaleField.setPlaceholder(Text.literal("1.0"));
         addDrawable(colorField); addSelectableChild(colorField);
         addDrawable(scaleField); addSelectableChild(scaleField);
 
         // 颜色预览位置：颜色输入框右侧，与输入框垂直居中
-        colorPreviewX = x + 95;
+        colorPreviewX = x + COLOR_PREVIEW_X_OFFSET;
         colorPreviewY = y + (ROW_H - COLOR_PREVIEW_SIZE) / 2;
 
-        y += ROW_H + LABEL_H + 4;
+        y += ROW_H + LABEL_H + FIELD_SPACING;
 
         glowBtn = ButtonWidget.builder(Text.literal("发光: 关"), b -> {
             if (selectedIndex >= 0) {
@@ -147,7 +282,7 @@ public class TextBlockScreen extends AbstractTextScreen {
                 editingLines.set(selectedIndex, updated);
                 glowBtn.setMessage(Text.literal("发光: " + (updated.glowing() ? "开" : "关")));
             }
-        }).dimensions(x, y, 110, ROW_H).build();
+        }).dimensions(x, y, GLOW_BTN_W, ROW_H).build();
         addDrawableChild(glowBtn);
 
         addDrawableChild(ButtonWidget.builder(Text.literal("+ 添加"), b -> {
@@ -155,7 +290,7 @@ public class TextBlockScreen extends AbstractTextScreen {
             selectedIndex = editingLines.size() - 1;
             ensureSelectedVisible();
             refreshEditFields(selectedIndex);
-        }).dimensions(listX, btnRowY, 80, ROW_H).build());
+        }).dimensions(listX, btnRowY, LIST_BTN_W, ROW_H).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("- 删除"), b -> {
             if (selectedIndex >= 0 && selectedIndex < editingLines.size()) {
@@ -164,21 +299,21 @@ public class TextBlockScreen extends AbstractTextScreen {
                 ensureSelectedVisible();
                 refreshEditFields(selectedIndex);
             }
-        }).dimensions(listX + 90, btnRowY, 80, ROW_H).build());
+        }).dimensions(listX + DEL_BTN_X_OFFSET, btnRowY, LIST_BTN_W, ROW_H).build());
 
         saveBtn = ButtonWidget.builder(Text.literal("保存"), b -> {
             saveEditToSelected();
             save();
-        }).dimensions(w / 2 - 110, h - 34, 100, 20).build();
-        cancelBtn = ButtonWidget.builder(Text.literal("取消"), b -> close()).dimensions(w / 2 + 10, h - 34, 100, 20).build();
+        }).dimensions(w / 2 - BOTTOM_BTN_W, h - BOTTOM_BTN_Y_OFFSET, BOTTOM_BTN_W, 20).build();
+        cancelBtn = ButtonWidget.builder(Text.literal("取消"), b -> close()).dimensions(w / 2 + BOTTOM_BTN_GAP, h - BOTTOM_BTN_Y_OFFSET, BOTTOM_BTN_W, 20).build();
 
         textField.setFocused(true);
-        textField.setMaxLength(64);
-        posXField.setMaxLength(8);
-        posYField.setMaxLength(8);
-        posZField.setMaxLength(8);
-        colorField.setMaxLength(8);
-        scaleField.setMaxLength(6);
+        textField.setMaxLength(TEXT_MAX_LENGTH);
+        posXField.setMaxLength(POS_MAX_LENGTH);
+        posYField.setMaxLength(POS_MAX_LENGTH);
+        posZField.setMaxLength(POS_MAX_LENGTH);
+        colorField.setMaxLength(POS_MAX_LENGTH);
+        scaleField.setMaxLength(SCALE_MAX_LENGTH);
 
         if (!editingLines.isEmpty()) {
             selectedIndex = 0;
@@ -215,10 +350,10 @@ public class TextBlockScreen extends AbstractTextScreen {
         context.fill(0, 0, width, height, 0x80000000);
 
         int listAreaRight = listX + LEFT_PANEL_W - SCROLLBAR_W;
-        context.fill(listX - 4, listLabelY - 4, listAreaRight + 2, listBottom + 4, 0x80100010);
-        context.fill(rightPanelX - 4, rightPanelY - 4, rightPanelX + rightPanelW + 4, rightPanelY + 210, 0x80100010);
+        context.fill(listX - PANEL_PADDING, listLabelY - PANEL_PADDING, listAreaRight + SCROLLBAR_PADDING, listBottom + PANEL_PADDING, 0x80100010);
+        context.fill(rightPanelX - PANEL_PADDING, rightPanelY - PANEL_PADDING, rightPanelX + rightPanelW + PANEL_PADDING, rightPanelY + RIGHT_PANEL_H, 0x80100010);
 
-        context.drawText(textRenderer, Text.literal("文字编辑器"), width / 2 - 60, 10, 0xFFFFFF, true);
+        context.drawText(textRenderer, Text.literal("文字编辑器"), width / 2 - TITLE_X_OFFSET, TITLE_Y, 0xFFFFFF, true);
 
         int x = rightPanelX;
         context.drawText(textRenderer, Text.literal("编辑选中行:"), x, rightPanelY, 0xFFFFFF, false);
@@ -253,10 +388,10 @@ public class TextBlockScreen extends AbstractTextScreen {
                 context.fill(listX, rowY, rowRight, rowY + ROW_H - 2, 0xFF404080);
             }
             String preview = editingLines.get(dataIndex).text().getString();
-            if (preview.length() > 22) preview = preview.substring(0, 20) + "..";
+            if (preview.length() > LIST_PREVIEW_MAX_LEN) preview = preview.substring(0, LIST_PREVIEW_TRUNCATE_LEN) + "..";
             context.drawText(textRenderer,
                     Text.literal(String.format("%d: %s", dataIndex + 1, preview)),
-                    listX + 4, rowY + 4, 0xFFFFFF, false);
+                    listX + PANEL_PADDING, rowY + PANEL_PADDING, 0xFFFFFF, false);
         }
     }
 
@@ -271,10 +406,10 @@ public class TextBlockScreen extends AbstractTextScreen {
         if (total <= LIST_VISIBLE_ROWS) return;
 
         int maxScroll = total - LIST_VISIBLE_ROWS;
-        int thumbH = Math.max(12, LIST_AREA_H * LIST_VISIBLE_ROWS / total);
+        int thumbH = Math.max(SCROLLBAR_THUMB_MIN_H, LIST_AREA_H * LIST_VISIBLE_ROWS / total);
         int travel = LIST_AREA_H - thumbH;
         int thumbY = listY + (int) (travel * (double) listScroll / maxScroll);
-        context.fill(sbX + 1, thumbY, sbX + SCROLLBAR_W - 1, thumbY + thumbH, 0xFFAAAAAA);
+        context.fill(sbX + SCROLLBAR_PADDING, thumbY, sbX + SCROLLBAR_W - SCROLLBAR_PADDING, thumbY + thumbH, 0xFFAAAAAA);
     }
 
     /**
