@@ -119,8 +119,7 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         // 7. 交互回调：客户端右键方块时检测 GuiInteractive
         //    检查前置条件后通过 GuiScreenRegistry 查找对应 Screen 工厂创建实例。
         //    不在 main 源集引用 client 类，保持 main → client 的单向依赖。
-        UseBlockCallback.EVENT.register((player, world, hand, hit) ->
-                handleGuiInteraction(player, world, hand, hit));
+        UseBlockCallback.EVENT.register(ChineseCoreBuildingClient::handleGuiInteraction);
     }
 
     /**

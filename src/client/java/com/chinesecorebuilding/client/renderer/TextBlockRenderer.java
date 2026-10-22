@@ -2,15 +2,17 @@ package com.chinesecorebuilding.client.renderer;
 
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
-import com.chinesecorebuilding.client.renderer.pipeline.api.BlockEntityDecorator;
+import com.chinesecorebuilding.client.renderer.pipeline.UnifiedRenderPipelineRegistry;
 import com.chinesecorebuilding.client.renderer.pipeline.context.BlockEntityRendererContext;
-import com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * 文字层渲染器（DECORATOR 层）。
@@ -19,8 +21,8 @@ import java.util.List;
  * <b>不应该</b>关心旋转/偏移等 TRANSFORMER（变换层）的逻辑。
  * </p>
  * <p>
- * <b>实现方式：</b>委托给 {@link TextDecorator} 执行文字渲染，
- * 通过统一渲染管线装饰器链处理旋转/偏移变换，保证与 BakedModel 管线同步。
+ * <b>实现方式：</b>通过 {@link UnifiedRenderPipelineRegistry} 创建完整装饰器链，
+ * 自动应用 RotationDecorator 和 OffsetDecorator，保证与 BakedModel 管线同步。
  * </p>
  * <p>
  * 本渲染器是公共文字功能基础设施的一部分，任何实现 {@link com.chinesecorebuilding.block.properties.model.SignTextProvider} 的方块
@@ -29,31 +31,30 @@ import java.util.List;
  *
  * @param <T> 渲染的 BlockEntity 类型（TextBlockEntity 或其子类）
  * @see com.chinesecorebuilding.block.properties.model.SignTextProvider
- * @see TextDecorator
  */
 public class TextBlockRenderer<T extends TextBlockEntity> implements BlockEntityRenderer<T> {
 
     /**
-     * 文字装饰器实例（单例，共享变换逻辑）。
+     * 文字装饰器实例（通过构造函数初始化，避免 MinecraftClient.getInstance() 返回 null）。
      */
-    private static final BlockEntityDecorator<Void> DECORATOR = new TextDecorator(
-            net.minecraft.client.MinecraftClient.getInstance().textRenderer
-    );
+    private final com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator textDecorator;
 
     /**
      * 构造函数。
      *
-     * @param ctx BlockEntityRenderer 工厂上下文
+     * @param ctx BlockEntityRenderer 工厂上下文（提供 textRenderer）
      */
     public TextBlockRenderer(BlockEntityRendererFactory.Context ctx) {
-        // 装饰器使用静态单例，不需要实例状态
+        this.textDecorator = new com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator(
+                ctx.getTextRenderer()
+        );
     }
 
     /**
      * 渲染 TextBlockEntity 的文字层。
      * <p>
-     * 委托给 {@link TextDecorator} 执行文字渲染，
-     * 装饰器链自动处理旋转/偏移变换。
+     * 通过 UnifiedRenderPipelineRegistry 创建完整装饰器链，
+     * 自动应用 RotationDecorator 和 OffsetDecorator，保证与 BakedModel 管线同步。
      * </p>
      *
      * @param entity          目标 BlockEntity（TextBlockEntity 或其子类）
@@ -71,10 +72,38 @@ public class TextBlockRenderer<T extends TextBlockEntity> implements BlockEntity
         List<TextLine> lines = entity.getLines();
         if (lines.isEmpty()) return;
 
+        BlockState state = entity.getCachedState();
+        Block block = state.getBlock();
+
+        Function<BlockEntityRendererContext<?>, Void> textRender = ctx -> {
+            if (ctx.entity() instanceof TextBlockEntity textEntity) {
+                List<TextLine> textLines = textEntity.getLines();
+                if (!textLines.isEmpty()) {
+                    renderTextLines(textLines, ctx);
+                }
+            }
+            return null;
+        };
+
         var context = new BlockEntityRendererContext<>(
                 entity, tickDelta, matrices, vertexConsumers, light, overlay
         );
 
-        DECORATOR.decorate(context, ctx -> null);
+        Function<BlockEntityRendererContext<?>, Void> chain =
+                UnifiedRenderPipelineRegistry.createBlockEntityChain(block, state, textRender);
+        chain.apply(context);
+    }
+
+    /**
+     * 渲染文字行列表。
+     * <p>
+     * 委托给 TextDecorator 执行实际文字渲染。
+     * </p>
+     *
+     * @param lines   文字行列表
+     * @param context 渲染上下文
+     */
+    private void renderTextLines(List<TextLine> lines, BlockEntityRendererContext<?> context) {
+        textDecorator.renderTextLines(lines, context);
     }
 }

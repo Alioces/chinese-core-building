@@ -40,6 +40,21 @@ public final class UnifiedRenderPipelineRegistry {
     /** BlockEntityRenderer 装饰器列表。 */
     private static final List<BlockEntityDecorator<Void>> blockEntityDecorators = new ArrayList<>();
 
+    /** 延迟初始化的文字装饰器。 */
+    private static TextDecorator textDecorator;
+
+    /**
+     * 获取或创建文字装饰器（延迟初始化，避免 MinecraftClient 未就绪时 textRenderer 为 null）。
+     *
+     * @return 文字装饰器实例
+     */
+    private static TextDecorator getTextDecorator() {
+        if (textDecorator == null) {
+            textDecorator = new TextDecorator(MinecraftClient.getInstance().textRenderer);
+        }
+        return textDecorator;
+    }
+
     /**
      * 注册 BakedModel 装饰器。
      *
@@ -114,17 +129,12 @@ public final class UnifiedRenderPipelineRegistry {
      * </p>
      */
     public static void initialize() {
-        var textRenderer = MinecraftClient.getInstance().textRenderer;
-
-        var textDecorator = new TextDecorator(textRenderer);
         var rotationDecorator = new RotationDecorator();
         var offsetDecorator = new OffsetDecorator();
 
-        registerBakedModelDecorator(textDecorator);
         registerBakedModelDecorator(rotationDecorator);
         registerBakedModelDecorator(offsetDecorator);
 
-        registerBlockEntityDecorator(textDecorator);
         registerBlockEntityDecorator(rotationDecorator);
         registerBlockEntityDecorator(offsetDecorator);
     }

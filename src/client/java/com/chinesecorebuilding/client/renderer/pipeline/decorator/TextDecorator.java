@@ -68,6 +68,18 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
         return state != null && state.getBlock() instanceof SignTextProvider;
     }
 
+    /**
+     * 延迟初始化 textRenderer，避免 MinecraftClient 未就绪时返回 null。
+     *
+     * @return TextRenderer 实例
+     */
+    private TextRenderer getTextRenderer() {
+        if (textRenderer == null) {
+            return net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        }
+        return textRenderer;
+    }
+
     @Override
     public Void decorate(BakedModelContext context, Function<BakedModelContext, Void> next) {
         // 当前版本：BakedModel 阶段不渲染文字（数据在 BlockEntity 中）
@@ -95,7 +107,7 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
      * @param lines   文字行列表
      * @param context 渲染上下文
      */
-    private void renderTextLines(List<TextLine> lines, BlockEntityRendererContext<?> context) {
+    public void renderTextLines(List<TextLine> lines, BlockEntityRendererContext<?> context) {
         context.matrices().push();
 
         for (TextLine line : lines) {
@@ -113,6 +125,7 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
      * 缩放 0.02 ≈ 1px/16单位，Y 轴取反（屏幕坐标向下 vs 世界坐标向上）。
      * </p>
      * <p>
+     * 文字默认朝向 -Z 方向（面向方块内部），需要绕 Y 轴旋转 180° 使其面向外部玩家。
      * 文字发光（glowing=true）时强制满亮度 0xFFFF，绕过方块实际接收到的光照，
      * 实现自发光效果。非发光文字使用方块实际收到的亮度，与方块本体一致。
      * </p>
@@ -121,15 +134,19 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
      * @param context 渲染上下文
      */
     private void renderSingleLine(TextLine line, BlockEntityRendererContext<?> context) {
+        TextRenderer renderer = getTextRenderer();
         Vec3d pos = line.position() != null ? line.position() : TextLine.DEFAULT_POSITION;
 
         context.matrices().push();
         context.matrices().translate(pos.x, pos.y, pos.z);
 
+        // 绕 Y 轴旋转 180°，使文字面向外部玩家（默认朝向 -Z，旋转后朝向 +Z）
+        context.matrices().multiply(new org.joml.Quaternionf().rotateY((float) Math.PI));
+
         float scale = SCALE_FACTOR * line.scale();
         context.matrices().scale(scale, -scale, scale);
 
-        float width = textRenderer.getWidth(line.text());
+        float width = renderer.getWidth(line.text());
         context.matrices().translate(-width / 2.0f, 0, 0);
 
         int color = line.color();
@@ -137,16 +154,16 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
         int effectiveLight = glowing ? 0xFFFF : context.light();
 
         if (glowing) {
-            OrderedText ordered = textRenderer.wrapLines(line.text(), Integer.MAX_VALUE)
+            OrderedText ordered = renderer.wrapLines(line.text(), Integer.MAX_VALUE)
                     .stream().findFirst().orElse(OrderedText.EMPTY);
-            textRenderer.drawWithOutline(
+            renderer.drawWithOutline(
                     ordered, 0, 0, color,
                     0xFF000000 | (color & 0xFFFFFF),
                     context.matrices().peek().getPositionMatrix(), context.vertexConsumers(),
                     effectiveLight
             );
         } else {
-            textRenderer.draw(
+            renderer.draw(
                     line.text(), 0, 0, color, true,
                     context.matrices().peek().getPositionMatrix(), context.vertexConsumers(),
                     TextRenderer.TextLayerType.SEE_THROUGH,

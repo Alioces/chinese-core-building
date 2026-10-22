@@ -71,10 +71,7 @@ public final class ModelBakePluginRegistry {
      * 模型 ID 格式：namespace:block/block_name 或 namespace:item/item_name。
      */
     private static Block resolveBlock(Identifier modelId) {
-        if (!modelId.getPath().startsWith("block/")) return null;
-        String blockPath = modelId.getPath().substring("block/".length());
-        Identifier blockId = new Identifier(modelId.getNamespace(), blockPath);
-        return Registries.BLOCK.get(blockId);
+        return ModelPluginRegistry.resolveBlock(modelId);
     }
 
     /** 工具类不允许实例化。 */
