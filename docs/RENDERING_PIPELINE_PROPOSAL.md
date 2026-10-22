@@ -82,20 +82,73 @@
   │   └─ Plugin 5: MultiBlockCoordinatorPlugin (优先级 100)
   │       └─ 始终: spec.addConnectedPart(handler.handle(...))
   │
-  └─ [After-Bake 阶段] ModelPluginRegistry.registerAll()
-      │  Fabric 回调: modifyModelAfterBake
-      │  包装顺序: Offset(Rotation(Text/SubModel(Original)))
+  ├─ [After-Bake 阶段] ModelPluginRegistry.registerAll()
+  │   │  Fabric 回调: modifyModelAfterBake
+  │   │  包装顺序: Offset(Rotation(Text/SubModel(Original)))
+  │   │
+  │   ├─ DECORATOR 层 (先注册 → 内层)
+  │   │   ├─ SubModelBakedModel  ← BakedModelSpec 含 subModels + deferred handlers
+  │   │   └─ TextBakedModel      ← TextProvider
+  │   │
+  │   └─ TRANSFORMER 层 (后注册 → 外层)
+  │       ├─ RotationBakedModel  ← Rotatable / Directional
+  │       └─ OffsetBakedModel    ← Offset
+  │
+  └─ [装饰器管线] UnifiedRenderPipelineRegistry.initialize()
+      │  注册: TextDecorator, RotationDecorator, OffsetDecorator
+      │  装饰顺序: Offset(100) → Rotation(0) → Text(-500) → SubModel(-1000) → 原始模型
+      │  两条管线共享装饰器实例，保证变换逻辑一致
       │
-      ├─ DECORATOR 层 (先注册 → 内层)
-      │   ├─ SubModelBakedModel  ← BakedModelSpec 含 subModels + deferred handlers
-      │   └─ TextBakedModel      ← TextProvider
+      ├─ BakedModel 管线: 通过 DecoratorBakedModel 委托给装饰器
+      │   ├─ OffsetBakedModel → OffsetDecorator.decorate()
+      │   └─ RotationBakedModel → RotationDecorator.decorate()
       │
-      └─ TRANSFORMER 层 (后注册 → 外层)
-          ├─ RotationBakedModel  ← Rotatable / Directional
-          └─ OffsetBakedModel    ← Offset
+      └─ BlockEntityRenderer 管线: 通过 TextBlockRenderer 委托给装饰器
+          └─ TextDecorator.decorate(BlockEntityRendererContext)
 ```
 
-### 2.2 静态 vs 动态分流
+### 2.2 装饰器管线架构
+
+```
+装饰器接口 (pipeline/api/)
+├── UnifiedRenderDecorator<T, R>   — 统一装饰器接口 + Priority 枚举
+│   └── Priority: SUB_MODEL(-1000) → TEXT(-500) → ROTATION(0) → OFFSET(100)
+├── BakedModelDecorator<R>         — BakedModel 管线专用接口
+│   └── decorate(BakedModelContext, Function) → Void
+└── BlockEntityDecorator<R>        — BlockEntity 管线专用接口
+    └── decorate(BlockEntityRendererContext<?>, Function) → Void
+
+渲染上下文 (pipeline/context/)
+├── BakedModelContext              — 封装 emitBlockQuads 全部参数
+│   └── blockView, state, pos, randomSupplier, context
+└── BlockEntityRendererContext<T>  — 封装 BlockEntityRenderer 全部参数
+    └── entity, tickDelta, matrices, vertexConsumers, light, overlay
+
+装饰器实现 (pipeline/decorator/)
+├── OffsetDecorator                — 偏移变换（同时实现两个接口）
+│   ├─ BakedModel: pushTransform(quad → quad.pos + offset)
+│   └─ BlockEntity: matrices.translate(offset)
+├── RotationDecorator              — 旋转变换（同时实现两个接口）
+│   ├─ BakedModel: pushTransform(quad → 绕 Y 轴旋转)
+│   └─ BlockEntity: matrices.multiply(Quaternionf.rotateY)
+├── TextDecorator                  — 文字渲染（同时实现两个接口）
+│   ├─ BakedModel: 当前仅代理（数据在 BlockEntity 中）
+│   └─ BlockEntity: TextRenderer.draw() 渲染文字顶点
+├── SubModelDecorator              — 子模型渲染（仅 BakedModel 管线）
+│   └─ 解析 SubModelEntry → 加载模型 → emitSubModelQuads()
+└── SubModelRendererBase           — 子模型渲染公共基类
+    └── modelCache, deferredCache, resolveSubModelEntries(), loadModelWithFallback()
+
+注册中心 (pipeline/)
+└── UnifiedRenderPipelineRegistry
+    ├── initialize() — 注册所有装饰器
+    ├── registerBakedModelDecorator() — 注册 BakedModel 装饰器
+    ├── registerBlockEntityDecorator() — 注册 BlockEntity 装饰器
+    ├── createBakedModelChain() — 创建 BakedModel 装饰器链
+    └── createBlockEntityChain() — 创建 BlockEntity 装饰器链
+```
+
+### 2.3 静态 vs 动态分流
 
 ```
 方块实现了 DynamicModelDecorator?
@@ -130,12 +183,25 @@
 | RotationBakedModel | `client/model/postProcessing/RotationBakedModel.java` | ✅ |
 | OffsetBakedModel | `client/model/postProcessing/OffsetBakedModel.java` | ✅ |
 | TextBakedModel | `client/model/postProcessing/TextBakedModel.java` | ✅ |
+| DecoratorBakedModel 基类 | `client/model/postProcessing/DecoratorBakedModel.java` | ✅ |
 | ModelPluginRegistry 分流 | `client/model/ModelPluginRegistry.java` | ✅ |
 | DynamicModelDecorator 标记 | `properties/model/DynamicModelDecorator.java` | ✅ |
 | BakedModelSpec 延迟字段 | `deferredSubModelHandler/TextureOverride/Emissive` 字段 | ✅ |
 | SubModelComposerPlugin 延迟注册 | `registerDeferredSubModelHandler()` | ✅ |
 | DynamicTexturePlugin 延迟注册 | `registerDeferredTextureHandler()` | ✅ |
 | EmissivePlugin 延迟注册 | `registerDeferredEmissiveHandler()` | ✅ |
+| **装饰器管线** | `client/renderer/pipeline/` | ✅ |
+| UnifiedRenderDecorator 接口 | `pipeline/api/UnifiedRenderDecorator.java` | ✅ |
+| BakedModelDecorator 接口 | `pipeline/api/BakedModelDecorator.java` | ✅ |
+| BlockEntityDecorator 接口 | `pipeline/api/BlockEntityDecorator.java` | ✅ |
+| BakedModelContext | `pipeline/context/BakedModelContext.java` | ✅ |
+| BlockEntityRendererContext | `pipeline/context/BlockEntityRendererContext.java` | ✅ |
+| OffsetDecorator | `pipeline/decorator/OffsetDecorator.java` | ✅ |
+| RotationDecorator | `pipeline/decorator/RotationDecorator.java` | ✅ |
+| TextDecorator | `pipeline/decorator/TextDecorator.java` | ✅ |
+| SubModelDecorator | `pipeline/decorator/SubModelDecorator.java` | ✅ |
+| SubModelRendererBase 基类 | `pipeline/decorator/SubModelRendererBase.java` | ✅ |
+| UnifiedRenderPipelineRegistry | `pipeline/UnifiedRenderPipelineRegistry.java` | ✅ |
 
 ### 3.2 待完成项 🚧
 
