@@ -205,7 +205,8 @@ Offset(Rotation(Text(SubModel(原模型))))
 
 装饰器管线（UnifiedRenderPipelineRegistry）:
   OffsetDecorator(100) → RotationDecorator(0) → TextDecorator(-500) → SubModelDecorator(-1000) → 原始模型
-  两条渲染管线（BakedModel / BlockEntityRenderer）共享装饰器实例
+  TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer），内部固定绕 Y 轴旋转 180° 使文字面向外部玩家
+  BlockEntityRenderer 管线通过 createBlockEntityChain() 获取完整装饰器链
 ```
 
 **静态 vs 动态分流**：
@@ -255,12 +256,14 @@ Layer 5 (client) 装饰器管线  UnifiedRenderPipelineRegistry + 装饰器链
   最终: Offset(Rotation(Text/SubModel(Original)))
 
 [装饰器管线] UnifiedRenderPipelineRegistry.initialize()
-  注册: TextDecorator, RotationDecorator, OffsetDecorator
-  装饰顺序: Offset(100) → Rotation(0) → Text(-500) → SubModel(-1000) → 原始模型
-  两条管线共享装饰器实例，保证变换逻辑一致
+  注册: RotationDecorator, OffsetDecorator
+  TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）
+  BlockEntityRenderer 管线通过 createBlockEntityChain() 获取完整装饰器链:
+    OffsetDecorator → RotationDecorator → TextDecorator
+  TextDecorator 内部固定绕 Y 轴旋转 180° 使文字面向外部玩家
 ```
 
-### 5.3 装饰器管线架构（2026-10-17 新增）
+### 5.3 装饰器管线架构（2026-10-18 更新）
 
 **背景**：原有 BakedModel 管线和 BlockEntityRenderer 管线的变换逻辑各自独立实现，存在代码重复和变换不一致的风险。
 

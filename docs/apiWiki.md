@@ -493,10 +493,14 @@ ChineseCoreBuildingClient.onInitializeClient()
 │     └── registerAll()  // 先装饰后变换的顺序保证
 │
 ├── UnifiedRenderPipelineRegistry.initialize()
-│     ├── 注册 TextDecorator, RotationDecorator, OffsetDecorator
-│     └── 两条渲染管线共享装饰器实例，保证变换逻辑一致
+│     ├── 注册 RotationDecorator, OffsetDecorator
+│     └── TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）
 │
 ├── BlockEntityRendererFactories.register(
+      TextBlockRenderer 使用完整装饰器链：
+        OffsetDecorator → RotationDecorator → TextDecorator
+      保证 BlockEntityRenderer 管线与 BakedModel 管线变换一致
+    )
 │         TestSignBlock.ENTITY_TYPE,
 │         TextBlockRenderer::new
 │     )
@@ -519,10 +523,10 @@ ChineseCoreBuildingClient.onInitializeClient()
 | **模型烘焙（装饰）** | TextBakedModel | 资源加载 | 读取 BlockEntity 数据 → 追加文字层顶点 |
 | **模型烘焙（变换）** | RotationBakedModel / OffsetBakedModel | 资源加载 | 读取 BlockState 属性 → 变换所有顶点 |
 | **装饰器管线** | UnifiedRenderPipelineRegistry | 每帧渲染 | 装饰器链统一处理旋转/偏移/文字/子模型 |
-| **BlockEntity 渲染** | TextBlockRenderer | 每帧渲染 | 委托 TextDecorator 执行文字渲染 |
+| **BlockEntity 渲染** | TextBlockRenderer | 每帧渲染 | 使用完整装饰器链：Offset→Rotation→Text |
 | **渲染层绑定** | BlockRenderLayerMap | 初始化一次 | Layered.getRenderLayerType() → RenderLayer 映射 |
 
-> **关键一致性保证**：RotationBakedModel / OffsetBakedModel 和 TextBlockRenderer 通过共享的装饰器实例（RotationDecorator / OffsetDecorator）执行变换，保证方块模型和文字层严格对齐。
+> **关键一致性保证**：TextBlockRenderer 通过 `UnifiedRenderPipelineRegistry.createBlockEntityChain()` 获取完整装饰器链（Offset→Rotation→Text），与 BakedModel 管线使用相同的变换逻辑，保证方块模型和文字层严格对齐。TextDecorator 内部固定绕 Y 轴旋转 180°，使文字面向外部玩家。
 
 ---
 

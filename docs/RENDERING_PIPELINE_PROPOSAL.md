@@ -1,6 +1,6 @@
 # 渲染管线技术方案与实施报告
 
-> 版本：2026-10-17 · 状态：反映当前代码实际实现
+> 版本：2026-10-18 · 状态：反映当前代码实际实现
 
 ---
 
@@ -95,9 +95,11 @@
   │       └─ OffsetBakedModel    ← Offset
   │
   └─ [装饰器管线] UnifiedRenderPipelineRegistry.initialize()
-      │  注册: TextDecorator, RotationDecorator, OffsetDecorator
-      │  装饰顺序: Offset(100) → Rotation(0) → Text(-500) → SubModel(-1000) → 原始模型
-      │  两条管线共享装饰器实例，保证变换逻辑一致
+      │  注册: RotationDecorator, OffsetDecorator
+      │  TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）
+      │  BlockEntityRenderer 管线通过 createBlockEntityChain() 获取完整装饰器链:
+      │    OffsetDecorator → RotationDecorator → TextDecorator
+      │  TextDecorator 内部固定绕 Y 轴旋转 180° 使文字面向外部玩家
       │
       ├─ BakedModel 管线: 通过 DecoratorBakedModel 委托给装饰器
       │   ├─ OffsetBakedModel → OffsetDecorator.decorate()
@@ -199,6 +201,7 @@
 | OffsetDecorator | `pipeline/decorator/OffsetDecorator.java` | ✅ |
 | RotationDecorator | `pipeline/decorator/RotationDecorator.java` | ✅ |
 | TextDecorator | `pipeline/decorator/TextDecorator.java` | ✅ |
+| TextBlockRenderer 装饰器链 | `client/renderer/TextBlockRenderer.java` | ✅ |
 | SubModelDecorator | `pipeline/decorator/SubModelDecorator.java` | ✅ |
 | SubModelRendererBase 基类 | `pipeline/decorator/SubModelRendererBase.java` | ✅ |
 | UnifiedRenderPipelineRegistry | `pipeline/UnifiedRenderPipelineRegistry.java` | ✅ |
@@ -372,7 +375,7 @@ public class TestLightBulbBlock extends CustomBlock
 
 ---
 
-## 7. 装饰器模式重构（2026-10-17）
+## 7. 装饰器模式重构（2026-10-17，2026-10-18 更新文字渲染）
 
 ### 7.1 背景
 
@@ -395,7 +398,7 @@ public class TestLightBulbBlock extends CustomBlock
 装饰器实现层 (pipeline/decorator/)
 ├── OffsetDecorator                — 偏移变换（同时实现两个接口）
 ├── RotationDecorator              — 旋转变换（同时实现两个接口）
-├── TextDecorator                  — 文字渲染（同时实现两个接口）
+├── TextDecorator                  — 文字渲染（由 TextBlockRenderer 创建，持有 TextRenderer）
 ├── SubModelDecorator              — 子模型渲染（仅 BakedModel 管线）
 └── SubModelRendererBase           — 子模型渲染公共基类
 
@@ -405,15 +408,26 @@ public class TestLightBulbBlock extends CustomBlock
 
 ### 7.3 装饰器链结构
 
+**BakedModel 管线**（模型烘焙后处理）：
 ```
 OffsetDecorator (Priority.OFFSET = 100)
   └─ RotationDecorator (Priority.ROTATION = 0)
      └─ TextDecorator (Priority.TEXT = -500)
         └─ SubModelDecorator (Priority.SUB_MODEL = -1000)
-           └─ 原始模型/渲染器
+           └─ 原始模型
+```
+
+**BlockEntityRenderer 管线**（每帧渲染）：
+```
+OffsetDecorator (Priority.OFFSET = 100)
+  └─ RotationDecorator (Priority.ROTATION = 0)
+     └─ TextDecorator (Priority.TEXT = -500)
+        └─ 原始渲染器
 ```
 
 **优先级规则**：数值越小越先执行（越靠近内层）。
+
+**文字朝向修正**：TextDecorator 内部固定绕 Y 轴旋转 180°，修正 Minecraft 文字默认朝向（-Z 面向方块内部），使文字面向外部玩家（+Z 方向）。
 
 ### 7.4 后处理包装器重构
 
@@ -456,7 +470,10 @@ public class OffsetBakedModel extends DecoratorBakedModel<OffsetDecorator> {
 | 决策 | 说明 |
 |------|------|
 | **分离两个装饰器接口** | Java 泛型限制：一个类不能实现相同接口不同泛型参数，因此创建 `BakedModelDecorator` 和 `BlockEntityDecorator` 两个独立接口 |
-| **共享装饰器实例** | Offset/Rotation/Text 装饰器在两条管线间共享，保证变换逻辑完全一致 |
+| **TextDecorator 独立创建** | TextDecorator 持有 TextRenderer 引用，由 TextBlockRenderer 构造函数创建，避免 MinecraftClient.getInstance().textRenderer 在初始化阶段返回 null |
+| **BlockEntityRenderer 完整装饰器链** | TextBlockRenderer 通过 `createBlockEntityChain()` 获取 Offset→Rotation→Text 完整链，保证与 BakedModel 管线变换一致 |
+| **文字 180° 翻转** | TextDecorator 内部固定绕 Y 轴旋转 180°，修正 Minecraft 文字默认朝向（-Z），使文字面向外部玩家 |
+| **共享装饰器实例** | Offset/Rotation 装饰器在两条管线间共享，保证变换逻辑完全一致 |
 | **BlockEntityDecorator.getPriorityValue() 声明为抽象** | 避免与 BakedModelDecorator 的默认方法继承冲突，由实现类显式委托 |
 | **DecoratorBakedModel 泛型约束** | `D extends BakedModelDecorator<Void>`，确保类型安全 |
 
