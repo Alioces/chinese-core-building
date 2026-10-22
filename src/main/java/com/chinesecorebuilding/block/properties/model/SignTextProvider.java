@@ -42,15 +42,7 @@ import java.util.List;
  */
 public interface SignTextProvider extends ModelBakeDecorator {
 
-    /**
-     * 获取此类方块使用的 BlockEntityType。
-     * <p>
-     * 实现类需返回与自己注册时一致的 BlockEntityType，
-     * 供 {@link #getSignEntity} 进行类型校验，避免跨方块类型取错实体。
-     * </p>
-     *
-     * @return 此类方块专属的 BlockEntityType（泛型上界为 SignBlockEntity）
-     */
+    @Override
     BlockEntityType<? extends TextBlockEntity> getBlockEntityType();
 
     /**

@@ -52,12 +52,11 @@ public class TextBlockEntity extends CustomBlockEntity {
      * 创建后默认 lines 为空列表，等待后续通过 {@link #addLine} / {@link #setLines} 填充。
      * </p>
      *
-     * @param type  BlockEntityType（必须由注册表创建）
      * @param pos   方块位置
      * @param state 方块状态
      */
-    public TextBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-        super(type, pos, state);
+    public TextBlockEntity(BlockPos pos, BlockState state) {
+        super(ChineseCoreBuildingEntities.TEXT_BLOCK_ENTITY_TYPE, pos, state);
     }
 
     /**

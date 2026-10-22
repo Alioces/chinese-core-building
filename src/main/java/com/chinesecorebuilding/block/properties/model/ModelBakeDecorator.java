@@ -1,5 +1,8 @@
 package com.chinesecorebuilding.block.properties.model;
 
+import com.chinesecorebuilding.block.entity.TextBlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+
 /**
  * 模型烘焙修饰阶段标识接口。
  * <p>
@@ -25,4 +28,13 @@ package com.chinesecorebuilding.block.properties.model;
  * @see SignTextProvider
  */
 public interface ModelBakeDecorator {
+    /**
+     * 获取此类方块使用的 BlockEntityType。
+     * <p>
+     * 实现类需返回与自己注册时一致的 BlockEntityType，
+     * </p>
+     *
+     * @return 此类方块专属的 BlockEntityType（泛型上界为 SignBlockEntity）
+     */
+    BlockEntityType<?> getBlockEntityType();
 }

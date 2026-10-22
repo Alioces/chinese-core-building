@@ -1,6 +1,7 @@
 package com.chinesecorebuilding.block;
 
 import com.chinesecorebuilding.ChineseCoreBuildingMod;
+import com.chinesecorebuilding.block.entity.ChineseCoreBuildingEntities;
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.properties.*;
 import com.chinesecorebuilding.block.properties.model.Directional;
@@ -50,23 +51,6 @@ public class TestSignBlock extends CustomBlock
     public static final String ID = "test_sign";
 
     /**
-     * 全局单例实例。
-     * <p>
-     * 测试方块无需多实例，所有注册和引用都使用此单例。
-     * </p>
-     */
-    public static final TestSignBlock INSTANCE = new TestSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque());
-
-    /**
-     * BlockEntityType 注册结果。
-     * <p>
-     * 由 {@link #register()} 赋值后供 {@link #createBlockEntity} 使用。
-     * 使用 holder 数组延迟赋值是因为 BlockEntityType 构造时需要先拿到类型自身。
-     * </p>
-     */
-    public static BlockEntityType<TextBlockEntity> ENTITY_TYPE;
-
-    /**
      * 默认构造函数，初始化默认朝向并声明方块属性（nonOpaque）。
      *
      * @param settings 方块属性配置
@@ -74,30 +58,6 @@ public class TestSignBlock extends CustomBlock
     public TestSignBlock(Settings settings) {
         super(settings);
         setDefaultState(initDirection(getDefaultState()));
-    }
-
-    /**
-     * 一次性注册测试方块、对应物品和 BlockEntityType。
-     * <p>
-     * 由 {@link ChineseCoreBuildingMod#onInitialize()} 调用。
-     * 使用 FabricBlockEntityTypeBuilder 避免原生 BlockEntityType 注册的冗长样板。
-     * </p>
-     */
-    public static void register() {
-        Registry.register(Registries.BLOCK, ChineseCoreBuildingMod.id(ID), INSTANCE);
-        Registry.register(Registries.ITEM, ChineseCoreBuildingMod.id(ID), new BlockItem(INSTANCE, new Item.Settings()));
-
-        // holder 数组是因为 BlockEntityType 构造时需要先拿到类型自身，用数组做延迟赋值
-        BlockEntityType<TextBlockEntity>[] holder = new BlockEntityType[1];
-        holder[0] = Registry.register(
-                Registries.BLOCK_ENTITY_TYPE,
-                ChineseCoreBuildingMod.id(ID + "_entity"),
-                FabricBlockEntityTypeBuilder.create(
-                        (pos, state) -> new TextBlockEntity(holder[0], pos, state),
-                        INSTANCE
-                ).build()
-        );
-        ENTITY_TYPE = holder[0];
     }
 
     /**
@@ -157,16 +117,16 @@ public class TestSignBlock extends CustomBlock
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new TextBlockEntity(ENTITY_TYPE, pos, state);
+        return new TextBlockEntity(pos, state);
     }
 
     /**
      * 返回关联的 BlockEntityType，供 SignTextProvider 接口消费时做类型匹配。
      *
-     * @return ENTITY_TYPE
+     * @return {@link ChineseCoreBuildingEntities#TEXT_BLOCK_ENTITY_TYPE}
      */
     @Override
     public BlockEntityType<? extends TextBlockEntity> getBlockEntityType() {
-        return ENTITY_TYPE;
+        return ChineseCoreBuildingEntities.TEXT_BLOCK_ENTITY_TYPE;
     }
 }

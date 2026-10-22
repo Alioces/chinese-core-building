@@ -59,10 +59,6 @@ public class ChineseCoreBuildingMod implements ModInitializer {
         ChineseCoreBuildingBlocks.initialize();
         ChineseCoreBuildingGroups.initialize();
 
-        TestSignBlock.register();
-        SingleLineSignBlock.register();
-        SimpleTextSignBlock.register();
-
         TextBlockService.registerReceiver();
 
         LOGGER.info("Hello Fabric world!");

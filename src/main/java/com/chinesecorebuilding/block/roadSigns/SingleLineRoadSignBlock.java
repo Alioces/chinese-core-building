@@ -2,6 +2,7 @@ package com.chinesecorebuilding.block.roadSigns;
 
 import com.chinesecorebuilding.block.SingleLineSignBlock;
 import com.chinesecorebuilding.block.TestSignBlock;
+import com.chinesecorebuilding.block.entity.ChineseCoreBuildingEntities;
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.properties.GuiInteractive;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
@@ -79,7 +80,7 @@ public class SingleLineRoadSignBlock extends RoadSignsBlock
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new TextBlockEntity(TestSignBlock.ENTITY_TYPE, pos, state);
+        return new TextBlockEntity(pos, state);
     }
 
     /**
@@ -89,7 +90,7 @@ public class SingleLineRoadSignBlock extends RoadSignsBlock
      */
     @Override
     public BlockEntityType<? extends TextBlockEntity> getBlockEntityType() {
-        return TestSignBlock.ENTITY_TYPE;
+        return ChineseCoreBuildingEntities.TEXT_BLOCK_ENTITY_TYPE;
     }
 
     /**

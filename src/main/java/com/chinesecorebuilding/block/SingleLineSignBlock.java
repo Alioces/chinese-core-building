@@ -1,6 +1,7 @@
 package com.chinesecorebuilding.block;
 
 import com.chinesecorebuilding.ChineseCoreBuildingMod;
+import com.chinesecorebuilding.block.entity.ChineseCoreBuildingEntities;
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.properties.GuiInteractive;
 import com.chinesecorebuilding.block.properties.RenderLayerType;
@@ -61,15 +62,6 @@ public class SingleLineSignBlock extends CustomBlock
     );
 
     /**
-     * BlockEntityType 注册结果。
-     * <p>
-     * 独立的实体类型，确保渲染器正确关联。
-     * 由 {@link #register()} 赋值后供 {@link #createBlockEntity} 使用。
-     * </p>
-     */
-    public static BlockEntityType<TextBlockEntity> ENTITY_TYPE;
-
-    /**
      * 构造函数，初始化默认朝向。
      *
      * @param settings 方块属性配置
@@ -77,28 +69,6 @@ public class SingleLineSignBlock extends CustomBlock
     public SingleLineSignBlock(Settings settings) {
         super(settings);
         setDefaultState(initDirection(getDefaultState()));
-    }
-
-    /**
-     * 一次性注册单行文字方块、对应物品和独立的 BlockEntityType。
-     * <p>
-     * 创建专用的 ENTITY_TYPE，避免与 TestSignBlock 共享类型导致的渲染器关联问题。
-     * </p>
-     */
-    public static void register() {
-        Registry.register(Registries.BLOCK, ChineseCoreBuildingMod.id(ID), INSTANCE);
-        Registry.register(Registries.ITEM, ChineseCoreBuildingMod.id(ID), new BlockItem(INSTANCE, new Item.Settings()));
-
-        BlockEntityType<TextBlockEntity>[] holder = new BlockEntityType[1];
-        holder[0] = Registry.register(
-                Registries.BLOCK_ENTITY_TYPE,
-                ChineseCoreBuildingMod.id(ID + "_entity"),
-                FabricBlockEntityTypeBuilder.create(
-                        (pos, state) -> new TextBlockEntity(holder[0], pos, state),
-                        INSTANCE
-                ).build()
-        );
-        ENTITY_TYPE = holder[0];
     }
 
     /**
@@ -142,17 +112,17 @@ public class SingleLineSignBlock extends CustomBlock
      */
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new TextBlockEntity(ENTITY_TYPE, pos, state);
+        return new TextBlockEntity(pos, state);
     }
 
     /**
      * 返回关联的 BlockEntityType，使用本方块专用的实体类型。
      *
-     * @return ENTITY_TYPE
+     * @return {@link ChineseCoreBuildingEntities#TEXT_BLOCK_ENTITY_TYPE}
      */
     @Override
     public BlockEntityType<? extends TextBlockEntity> getBlockEntityType() {
-        return ENTITY_TYPE;
+        return ChineseCoreBuildingEntities.TEXT_BLOCK_ENTITY_TYPE;
     }
 
     /**

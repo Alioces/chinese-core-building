@@ -202,13 +202,13 @@ public class ChineseCoreBuildingBlocks {
     public static final Block wine_cabinet = register("wine_cabinet", new WineCabinetBlock());
 
     /** 文字方块测试（公共文字功能参考实现） */
-    public static final Block test_sign = TestSignBlock.INSTANCE;
+    public static final Block test_sign = register("test_sign", new TestSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 
     /** 单行文字方块测试（公共文字功能单行模式实现） */
-    public static final Block single_line_sign = SingleLineSignBlock.INSTANCE;
+    public static final Block single_line_sign = register("single_line_sign", new SingleLineSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 
     /** 简化版文字方块测试（简化 GUI，隐藏位置参数） */
-    public static final Block simple_text_sign = SimpleTextSignBlock.INSTANCE;
+    public static final Block simple_text_sign = register("simple_text_sign", new SimpleTextSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 
     /**
      * 统一注册方块及其对应的方块物品。
