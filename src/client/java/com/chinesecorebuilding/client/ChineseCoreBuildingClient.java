@@ -104,12 +104,12 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
         //    后注册 = 外包装层，变换层作用在装饰层的输出之上
         ModelPluginRegistry.registerAll();
 
-        // 6. BlockEntityRenderer：文字方块实体使用 TextBlockRenderer 渲染文字
+        // 6. BlockEntityRenderer：自动扫描所有 ModelBakeDecorator 方块注册渲染器
+        //    方块通过 getRendererTypeId() 声明渲染器标识，渲染器通过静态块向
+        //    BlockEntityRendererRegistry 提交工厂，客户端统一注册
         //    文字渲染在独立的 BlockEntityRenderer 管线里，与 BakedModel 管线解耦，
-        //    但 TextBlockRenderer 会手动读取 Rotatable/Offset 接口做同步变换
-        BlockEntityRendererFactories.register(TestSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
-        BlockEntityRendererFactories.register(SingleLineSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
-        BlockEntityRendererFactories.register(SimpleTextSignBlock.ENTITY_TYPE, TextBlockRenderer::new);
+        //    TextBlockRenderer 通过完整装饰器链（Offset→Rotation→Text）保证变换一致
+        registerBlockEntityRenderers();
 
         // 6.5 注册 GUI 屏幕工厂（遵循开闭原则：新增 GUI 类型只需在此注册，回调代码无需修改）
         GuiScreenRegistry.register(GuiInteractive.GUI_TYPE_MULTI_LINE, TextBlockScreen::new);
@@ -186,6 +186,36 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
                     default          -> RenderLayer.getSolid();
                 };
                 BlockRenderLayerMap.INSTANCE.putBlock(block, layer);
+            }
+        }
+    }
+
+    /**
+     * 自动扫描所有实现 ModelBakeDecorator 的方块，注册其声明的 BlockEntityRenderer。
+     * <p>
+     * 渲染器类通过静态块向 BlockEntityRendererRegistry 提交工厂，
+     * 方块通过 getRendererTypeId() 声明需要的渲染器标识，
+     * 此方法统一读取注册表并完成 Fabric 管线注册。
+     * </p>
+     * <p>
+     * 遵循开闭原则：新增方块只需实现 ModelBakeDecorator 并覆盖
+     * getRendererTypeId()，渲染器类向 BlockEntityRendererRegistry 注册自己，
+     * 客户端无需修改。
+     * </p>
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void registerBlockEntityRenderers() {
+        var factories = com.chinesecorebuilding.client.renderer.BlockEntityRendererRegistry.getFactories();
+
+        for (Block block : Registries.BLOCK) {
+            if (block instanceof com.chinesecorebuilding.block.properties.model.ModelBakeDecorator decorator) {
+                String typeId = decorator.getRendererTypeId();
+                if (typeId != null && factories.containsKey(typeId)) {
+                    BlockEntityRendererFactories.register(
+                        (net.minecraft.block.entity.BlockEntityType) decorator.getBlockEntityType(),
+                        (net.minecraft.client.render.block.entity.BlockEntityRendererFactory) factories.get(typeId)
+                    );
+                }
             }
         }
     }

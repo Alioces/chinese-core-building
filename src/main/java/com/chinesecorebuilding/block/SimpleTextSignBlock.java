@@ -70,13 +70,6 @@ public class SimpleTextSignBlock extends CustomBlock
     public static final String ID = "simple_text_sign";
 
     /**
-     * 全局单例实例。
-     */
-    public static final SimpleTextSignBlock INSTANCE = new SimpleTextSignBlock(
-            FabricBlockSettings.create().strength(4.0f).nonOpaque()
-    );
-
-    /**
      * 构造函数，初始化默认朝向。
      *
      * @param settings 方块属性配置

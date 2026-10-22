@@ -4,6 +4,7 @@ import com.chinesecorebuilding.block.ChineseCoreBuildingBlocks;
 import com.chinesecorebuilding.block.SimpleTextSignBlock;
 import com.chinesecorebuilding.block.SingleLineSignBlock;
 import com.chinesecorebuilding.block.TestSignBlock;
+import com.chinesecorebuilding.block.entity.ChineseCoreBuildingEntities;
 import com.chinesecorebuilding.group.ChineseCoreBuildingGroups;
 import com.chinesecorebuilding.network.TextBlockService;
 import net.fabricmc.api.ModInitializer;
@@ -57,6 +58,7 @@ public class ChineseCoreBuildingMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ChineseCoreBuildingBlocks.initialize();
+        ChineseCoreBuildingEntities.initialize();
         ChineseCoreBuildingGroups.initialize();
 
         TextBlockService.registerReceiver();

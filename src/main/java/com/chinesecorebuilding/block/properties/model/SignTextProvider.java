@@ -46,6 +46,24 @@ public interface SignTextProvider extends ModelBakeDecorator {
     BlockEntityType<? extends TextBlockEntity> getBlockEntityType();
 
     /**
+     * 返回文字渲染器类型标识。
+     * <p>
+     * 所有实现 SignTextProvider 的方块共享同一个文字渲染器。
+     * 返回固定字符串标识 "text"，客户端根据此标识查找对应的渲染器工厂。
+     * </p>
+     * <p>
+     * 使用字符串标识而非直接引用，避免 main 源集引用客户端类，
+     * 保持编译隔离。方块实现此接口即自动获得文字渲染能力。
+     * </p>
+     *
+     * @return 渲染器类型标识 "text"
+     */
+    @Override
+    default String getRendererTypeId() {
+        return "text";
+    }
+
+    /**
      * 在指定世界和位置查找此类型的 BlockEntity。
      *
      * @param world 世界对象

@@ -35,6 +35,17 @@ import java.util.function.Function;
 public class TextBlockRenderer<T extends TextBlockEntity> implements BlockEntityRenderer<T> {
 
     /**
+     * 向注册中心提交文字渲染器工厂。
+     * <p>
+     * 静态块在类加载时执行，将 "text" 标识与 TextBlockRenderer 工厂绑定。
+     * 方块实现 SignTextProvider 接口即自动获得此渲染器。
+     * </p>
+     */
+    static {
+        BlockEntityRendererRegistry.register("text", TextBlockRenderer::new);
+    }
+
+    /**
      * 文字装饰器实例（通过构造函数初始化，避免 MinecraftClient.getInstance() 返回 null）。
      */
     private final com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator textDecorator;

@@ -31,10 +31,31 @@ public interface ModelBakeDecorator {
     /**
      * 获取此类方块使用的 BlockEntityType。
      * <p>
-     * 实现类需返回与自己注册时一致的 BlockEntityType，
+     * 默认返回 null，表示此方块不需要 BlockEntity。
+     * 需要方块实体的子类接口（如 SignTextProvider）应覆盖此方法。
      * </p>
      *
-     * @return 此类方块专属的 BlockEntityType（泛型上界为 SignBlockEntity）
+     * @return 此类方块专属的 BlockEntityType，或 null
      */
-    BlockEntityType<?> getBlockEntityType();
+    default BlockEntityType<?> getBlockEntityType() {
+        return null;
+    }
+
+    /**
+     * 获取此方块类型需要的 BlockEntityRenderer 类型标识。
+     * <p>
+     * 默认返回 null，表示不需要 BlockEntityRenderer。
+     * 子类接口（如 SignTextProvider）可覆盖此方法提供具体标识。
+     * </p>
+     * <p>
+     * 返回类型为 String 以避免 main 源集引用客户端的
+     * BlockEntityRendererFactory 接口，保持编译隔离。
+     * 客户端消费时通过标识查找对应的渲染器工厂。
+     * </p>
+     *
+     * @return 渲染器类型标识，或 null
+     */
+    default String getRendererTypeId() {
+        return null;
+    }
 }

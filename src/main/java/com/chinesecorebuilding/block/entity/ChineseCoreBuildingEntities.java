@@ -8,15 +8,38 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
-public class ChineseCoreBuildingEntities {
-    public static final BlockEntityType<TextBlockEntity> TEXT_BLOCK_ENTITY_TYPE = Registry.register(
-                    Registries.BLOCK_ENTITY_TYPE,
-                    Identifier.of(ChineseCoreBuildingMod.MOD_ID, "text_block_entity"),
-                    FabricBlockEntityTypeBuilder.create(
-                            TextBlockEntity::new, // 方法引用，对应只接收 (BlockPos, BlockState) 的构造函数
-                            ChineseCoreBuildingBlocks.test_sign,
-                            ChineseCoreBuildingBlocks.simple_text_sign,
-                            ChineseCoreBuildingBlocks.single_line_sign
-                    ).build()
-            );;
+/**
+ * 方块实体类型注册中心。
+ * <p>
+ * 使用延迟初始化避免类加载顺序问题。
+ * 必须在方块注册完成后调用 {@link #initialize()}。
+ * </p>
+ */
+public final class ChineseCoreBuildingEntities {
+
+    /**
+     * 文字方块实体类型。
+     */
+    public static BlockEntityType<TextBlockEntity> TEXT_BLOCK_ENTITY_TYPE;
+
+    private ChineseCoreBuildingEntities() {}
+
+    /**
+     * 注册所有方块实体类型。
+     * <p>
+     * 必须在方块注册完成后调用（由 ChineseCoreBuildingMod.onInitialize() 调用）。
+     * </p>
+     */
+    public static void initialize() {
+        TEXT_BLOCK_ENTITY_TYPE = Registry.register(
+                Registries.BLOCK_ENTITY_TYPE,
+                Identifier.of(ChineseCoreBuildingMod.MOD_ID, "text_block_entity"),
+                FabricBlockEntityTypeBuilder.create(
+                        TextBlockEntity::new,
+                        ChineseCoreBuildingBlocks.test_sign,
+                        ChineseCoreBuildingBlocks.simple_text_sign,
+                        ChineseCoreBuildingBlocks.single_line_sign
+                ).build()
+        );
+    }
 }

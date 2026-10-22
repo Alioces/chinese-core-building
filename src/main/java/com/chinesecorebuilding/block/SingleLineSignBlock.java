@@ -50,18 +50,6 @@ public class SingleLineSignBlock extends CustomBlock
                    BlockEntityProvider, SignTextProvider {
 
     /**
-     * 方块注册名。
-     */
-    public static final String ID = "single_line_sign";
-
-    /**
-     * 全局单例实例。
-     */
-    public static final SingleLineSignBlock INSTANCE = new SingleLineSignBlock(
-            FabricBlockSettings.create().strength(4.0f).nonOpaque()
-    );
-
-    /**
      * 构造函数，初始化默认朝向。
      *
      * @param settings 方块属性配置
