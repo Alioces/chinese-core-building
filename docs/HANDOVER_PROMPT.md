@@ -94,7 +94,7 @@ src/
 |------|--------|
 | 模型插件（*Plugin.java） | — |
 | BakedModel 实现（*BakedModel.java） | — |
-| Renderer（TextBlockRenderer） | — | 文字层渲染器，公共文字功能基础设施的一部分 |
+| Renderer（TextBlockRenderer） | — |
 | Screen / GUI | — |
 | datagen | — |
 
@@ -118,36 +118,91 @@ UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 
 ### 4.1 接口层次图
 
-```
-Block (Minecraft)
-  │
-  ├── PlacementBehavior (util 包, 放置后处理)
-  │     ├── Rotatable → onPlace: with(ROTATION, ...)
-  │     └── Directional → onPlace: with(FACING, ...)    ← overrides
-  │
-  ├── ModelBakeDecorator (空标记, 装饰阶段)
-  │     ├── SubModelProvider       → 子模型锚点 + 延迟求值
-  │     ├── StatefulTextureProvider → 状态驱动贴图
-  │     ├── LightEmissive          → 状态驱动发光
-  │     ├── AnimatableModel        → 运行时动画变换
-  │     ├── MultiBlockCoordinator  → 多方块组合模型 (待消费方)
-  │     ├── TextProvider       → 文字层渲染 (需 +BlockEntityProvider)
-  │     └── DynamicModelDecorator  → 延迟求值标记 (静态/动态分流)
-  │
-  ├── ModelWorldTransformer (空标记, 变换阶段)
-  │     ├── Rotatable  → getRotationAngle()  16 档 22.5°
-  │     │     └── Directional → getRotationAngle() 重写为 90° 步进
-  │     └── Offset     → getOffset(BlockState) → {dx, dy, dz}
-  │
-  ├── Layered         → getRenderLayerType()  CUTOUT / TRANSLUCENT
-  ├── Interactive     → getInteraction()      BlockInteraction 函数式处理器
-  │     └── GuiInteractive → getGuiType() / getGuiTitle() / canOpenGui() / onGuiOpened()
-  │           │
-  │           └── 客户端消费方：GuiScreenRegistry（工厂注册表模式）
-  │                 ├── register(type, factory)  — 注册 Screen 工厂
-  │                 └── createScreen(type, pos, title) — 按类型创建 Screen
-  ├── OffsetFunction  → 静态偏移 @FunctionalInterface
-  └── BlockInteraction → 交互处理 @FunctionalInterface
+```mermaid
+%%{init: {'classDiagram': {'curve': 'linear'}}}%%
+classDiagram
+    class Block {
+        <<Minecraft>>
+    }
+
+    class PlacementBehavior {
+        <<interface, util 包, 放置后处理>>
+    }
+    class Rotatable {
+        <<interface>>
+        onPlace: with(ROTATION, ...)
+    }
+    class Directional {
+        <<interface>>
+        onPlace: with(FACING, ...) overrides
+    }
+
+    class ModelBakeDecorator {
+        <<interface, 空标记, 装饰阶段>>
+    }
+    class SubModelProvider
+    class StatefulTextureProvider
+    class LightEmissive
+    class AnimatableModel
+    class MultiBlockCoordinator
+    class SignTextProvider {
+        <<interface>>
+        文字层渲染 (需 +BlockEntityProvider)
+    }
+    class DynamicModelDecorator {
+        <<interface, 延迟求值标记>>
+    }
+
+    class ModelWorldTransformer {
+        <<interface, 空标记, 变换阶段>>
+    }
+    class Offset {
+        <<interface>>
+        +getOffset(BlockState) → Vec3d
+    }
+
+    class Layered {
+        <<interface>>
+        +getRenderLayerType()
+    }
+    class Interactive {
+        <<interface>>
+        +getInteraction()
+    }
+    class GuiInteractive {
+        <<interface>>
+        +getGuiType() / getGuiTitle() / canOpenGui() / onGuiOpened()
+    }
+    class OffsetFunction {
+        <<@FunctionalInterface>>
+    }
+    class BlockInteraction {
+        <<@FunctionalInterface>>
+    }
+
+    Block <|-- PlacementBehavior
+    Block <|-- ModelBakeDecorator
+    Block <|-- ModelWorldTransformer
+    Block <|-- Layered
+    Block <|-- Interactive
+    Block <|-- OffsetFunction
+    Block <|-- BlockInteraction
+
+    PlacementBehavior <|-- Rotatable
+    Rotatable <|-- Directional
+
+    ModelBakeDecorator <|-- SubModelProvider
+    ModelBakeDecorator <|-- StatefulTextureProvider
+    ModelBakeDecorator <|-- LightEmissive
+    ModelBakeDecorator <|-- AnimatableModel
+    ModelBakeDecorator <|-- MultiBlockCoordinator
+    ModelBakeDecorator <|-- SignTextProvider
+    ModelBakeDecorator <|-- DynamicModelDecorator
+
+    ModelWorldTransformer <|-- Rotatable
+    ModelWorldTransformer <|-- Offset
+
+    Interactive <|-- GuiInteractive
 ```
 
 ### 4.2 CustomBlock —— 唯一的调度中枢
@@ -184,30 +239,36 @@ public class CustomBlock extends Block {
 
 ### 4.3 客户端模型管线 —— 两阶段 + 插件链 + 装饰器
 
-```
-ModelPluginRegistry.registerAll()
-  │
-  ├─ Phase.DECORATOR (先注册 → 内层)
-  │   └─ TextBakedModel ← TextProvider 方块
-  │
-  ├─ registerBakeChainBridge() (在 DECORATOR 和 TRANSFORMER 之间)
-  │   └─ SubModelBakedModel ← ModelBakeDecorator 方块
-  │       └─ 内部执行 5 个 Plugin 链: SubModelComposer → DynamicTexture
-  │                                     → AnimationController → Emissive
-  │                                     → MultiBlockCoordinator
-  │
-  └─ Phase.TRANSFORMER (后注册 → 外层)
-      ├─ RotationBakedModel ← Rotatable / Directional 方块
-      └─ OffsetBakedModel   ← Offset 方块
+```mermaid
+flowchart TD
+    REG["ModelPluginRegistry.registerAll()"]
 
-最终包装顺序（从外到内）:
-Offset(Rotation(Text(SubModel(原模型))))
+    REG --> DEC["Phase.DECORATOR（先注册 → 内层）"]
+    DEC --> TBM["TextBakedModel ← SignTextProvider 方块"]
 
-装饰器管线（UnifiedRenderPipelineRegistry）:
-  OffsetDecorator(100) → RotationDecorator(0) → TextDecorator(-500) → SubModelDecorator(-1000) → 原始模型
-  TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer），内部固定绕 Y 轴旋转 180° 使文字面向外部玩家
-  BlockEntityRenderer 管线通过 createBlockEntityChain() 获取完整装饰器链
+    REG --> BRIDGE["registerBakeChainBridge()\nDECORATOR 和 TRANSFORMER 之间"]
+    BRIDGE --> SUB["SubModelBakedModel ← ModelBakeDecorator 方块"]
+    SUB --> PLUGINS["内部执行 5 个 Plugin 链\nSubModelComposer → DynamicTexture\n→ AnimationController → Emissive\n→ MultiBlockCoordinator"]
+
+    REG --> TRANS["Phase.TRANSFORMER（后注册 → 外层）"]
+    TRANS --> ROT["RotationBakedModel ← Rotatable / Directional 方块"]
+    TRANS --> OFF["OffsetBakedModel ← Offset 方块"]
+
+    REG --> FINAL["最终包装顺序（从外到内）\nOffset(Rotation(Text(SubModel(原模型))))"]
 ```
+
+**装饰器管线（UnifiedRenderPipelineRegistry）**：
+
+```mermaid
+flowchart LR
+    A["OffsetDecorator(100)"] --> B["RotationDecorator(0)"]
+    B --> C["TextDecorator(-500)"]
+    C --> D["SubModelDecorator(-1000)"]
+    D --> E["原始模型"]
+```
+
+TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer），内部固定绕 Y 轴旋转 180° 使文字面向外部玩家。
+BlockEntityRenderer 管线通过 `createBlockEntityChain()` 获取完整装饰器链。
 
 **静态 vs 动态分流**：
 
@@ -224,7 +285,7 @@ Offset(Rotation(Text(SubModel(原模型))))
 | `RotatableSignBlock` | `Rotatable` | 旋转 + 自定义形状 |
 | `RoadSignsBlock` | `Directional, Layered, Offset` | 4 方向 + CUTOUT 渲染 + 空间偏移 |
 | `WineCabinetBlock` | `Directional, SubModelProvider, StatefulTextureProvider, LightEmissive, AnimatableModel, Layered` | 全能力展示：子模型 + 动态贴图 + 发光 + 动画 |
-| `TestSignBlock` | `Directional, Layered, GuiInteractive, BlockEntityProvider, TextProvider` | 文字渲染 + GUI 交互（公共文字功能参考实现） |
+| `TestSignBlock` | `Directional, Layered, GuiInteractive, BlockEntityProvider, SignTextProvider` | 文字渲染 + GUI 交互（公共文字功能参考实现） |
 
 ---
 
@@ -234,36 +295,46 @@ Offset(Rotation(Text(SubModel(原模型))))
 
 ### 5.1 管线分层
 
-```
-Layer 0 (main)  接口声明    Rotatable, Directional, SubModelProvider...
-Layer 1 (main)  函数式处理器  SubModelHandler, TextureOverrideHandler...
-Layer 2 (main)  数据容器    BakedModelSpec, BakeContext, AnchorPoint
-Layer 3 (client) 插件链    5 个 ModelBakePlugin，按优先级执行
-Layer 4 (client) 后处理    SubModelBakedModel, RotationBakedModel, DecoratorBakedModel(基类)...
-Layer 5 (client) 装饰器管线  UnifiedRenderPipelineRegistry + 装饰器链
+```mermaid
+flowchart TD
+    L0["Layer 0 (main) 接口声明\nRotatable, Directional, SubModelProvider..."]
+    L1["Layer 1 (main) 函数式处理器\nSubModelHandler, TextureOverrideHandler..."]
+    L2["Layer 2 (main) 数据容器\nBakedModelSpec, BakeContext, AnchorPoint"]
+    L3["Layer 3 (client) 插件链\n5 个 ModelBakePlugin，按优先级执行"]
+    L4["Layer 4 (client) 后处理\nSubModelBakedModel, RotationBakedModel, DecoratorBakedModel(基类)..."]
+    L5["Layer 5 (client) 装饰器管线\nUnifiedRenderPipelineRegistry + 装饰器链"]
+
+    L0 --> L1 --> L2 --> L3 --> L4 --> L5
 ```
 
 ### 5.2 两阶段时序
 
+```mermaid
+flowchart TD
+    subgraph Bake["Bake 阶段: ModelBakePluginRegistry.bakeChain(block, defaultState, spec)"]
+        direction LR
+        SM["SubModelComposer(-1000)"] --> DT["DynamicTexture(-900)"]
+        DT --> ANIM["Animation(-500)"]
+        ANIM --> EMV["Emissive(-400)"]
+        EMV --> MB["MultiBlock(100)"]
+    end
+
+    subgraph AfterBake["After-Bake 阶段: ModelPluginRegistry.registerAll()"]
+        D1["DECORATOR 层: SubModelBakedModel + TextBakedModel（内层）"]
+        D2["TRANSFORMER 层: RotationBakedModel + OffsetBakedModel（外层）"]
+        D3["最终: Offset(Rotation(Text/SubModel(Original)))"]
+    end
+
+    subgraph Decorator["装饰器管线: UnifiedRenderPipelineRegistry.initialize()"]
+        direction LR
+        D_OFF["OffsetDecorator"] --> D_ROT["RotationDecorator"]
+        D_ROT --> D_TXT["TextDecorator (TextBlockRenderer 自行创建)"]
+    end
+
+    Bake --> AfterBake --> Decorator
 ```
-[Bake 阶段] ModelBakePluginRegistry.bakeChain(block, defaultState, spec)
-  SubModelComposer(-1000) → DynamicTexture(-900) → Animation(-500)
-  → Emissive(-400) → MultiBlock(100)
 
-[After-Bake 阶段] ModelPluginRegistry.registerAll()
-  DECORATOR 层: SubModelBakedModel + TextBakedModel   (内层)
-  TRANSFORMER 层: RotationBakedModel + OffsetBakedModel (外层)
-  最终: Offset(Rotation(Text/SubModel(Original)))
-
-[装饰器管线] UnifiedRenderPipelineRegistry.initialize()
-  注册: RotationDecorator, OffsetDecorator
-  TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）
-  BlockEntityRenderer 管线通过 createBlockEntityChain() 获取完整装饰器链:
-    OffsetDecorator → RotationDecorator → TextDecorator
-  TextDecorator 内部固定绕 Y 轴旋转 180° 使文字面向外部玩家
-```
-
-### 5.3 装饰器管线架构（2026-10-18 更新）
+### 5.3 装饰器管线架构
 
 **背景**：原有 BakedModel 管线和 BlockEntityRenderer 管线的变换逻辑各自独立实现，存在代码重复和变换不一致的风险。
 
@@ -291,18 +362,18 @@ pipeline/
 
 **子模型渲染重构**：`SubModelDecorator` 和 `SubModelBakedModel` 共享 `SubModelRendererBase` 基类，消除约 150 行重复代码。
 
-详见 [RENDERING_PIPELINE_PROPOSAL.md §7](./RENDERING_PIPELINE_PROPOSAL.md#7-装饰器模式重构2026-10-17)。
+详见 [RENDERING_PIPELINE_PROPOSAL.md §7](./RENDERING_PIPELINE_PROPOSAL.md#7-装饰器模式重构)。
 
 ### 5.4 静态/动态分流
 
-```
-方块实现了 DynamicModelDecorator?
-  ├─ YES → 动态路径: 插件存储 handler 引用，渲染时按实际 BlockState 求值
-  └─ NO  → 静态路径: 插件立即调用 handler 写入 BakedModelSpec
-             ⚠️ 使用 defaultState，所有状态的模型完全相同！
+```mermaid
+flowchart TD
+    CHK{"方块实现了\nDynamicModelDecorator?"}
+    CHK -->|YES| DYN["动态路径\n插件存储 handler 引用，渲染时按实际 BlockState 求值"]
+    CHK -->|NO| STA["静态路径\n插件立即调用 handler 写入 BakedModelSpec\n⚠️ 使用 defaultState，所有状态的模型完全相同！"]
 ```
 
-### 5.4 已完成 ✅ vs 待完成 🚧
+### 5.5 已完成 ✅ vs 待完成 🚧
 
 | 组件 | 状态 | 说明 |
 |------|:----:|------|
@@ -319,7 +390,7 @@ pipeline/
 | **EmissiveBakedModel** | 🚧 | handler 已存入 spec，但缺少渲染时消费方 |
 | **MultiBlock BakedModel** | 🚧 | 接口 + Plugin 已有，缺 BakedModel |
 
-### 5.5 当前架构阻塞点 🔴
+### 5.6 当前架构阻塞点 🔴
 
 > 以下三个 handler 已通过 Plugin 正确存入 `BakedModelSpec.deferred*` 字段，但 `SubModelBakedModel.getQuads()` 仅消费了 `deferredSubModelHandler`，纹理和发光 handler 暂存未读取。
 
@@ -329,7 +400,7 @@ pipeline/
 | 缺少 EmissiveBakedModel | 状态驱动的发光等级不可用（如 LIT=true → emissive 15） | 🔴 P0 |
 | 缺少 MultiBlock BakedModel | 多方块模型合并不可见 | 🟡 P2 |
 
-### 5.6 技术方案与实现的已知差异
+### 5.7 技术方案与实现的已知差异
 
 | 差异 | 方案 | 实际 | 影响 |
 |------|------|------|------|
@@ -338,7 +409,7 @@ pipeline/
 | DynamicModelDecorator 必要性 | 未明确要求测试方块实现 | 是实现状态驱动渲染的唯一途径 | 若忘记实现，LIT 等属性变更不会产生视觉效果 |
 | MultiBlockHandler 的 World 参数 | 传入 World 实例 | bake 阶段 World 为 null | 只能在渲染时求值，与 bake 阶段语义冲突 |
 
-### 5.7 实施路线图
+### 5.8 实施路线图
 
 ```
 Phase 1 (P0) 补齐消费方
@@ -470,6 +541,14 @@ public class MyBlock extends CustomBlock
 // 解决：MultiBlock 逻辑必须在渲染时（BakedModel.getQuads()）执行
 ```
 
+### 7.9 JVM 类字面量不触发初始化（已解决）
+
+```java
+// ❌ 旧设计：Renderers.Registry 枚举 + 类字面量 TextBlockRenderer.class
+//    问题：JLS §12.4.1 规定 .class 不触发类初始化 → 静态块不执行 → 工厂未注册
+// ✅ 当前方案：initRenderers() 直接调用 BlockEntityRendererRegistry.register("text", TextBlockRenderer::new)
+```
+
 ---
 
 ## 8. 编译命令
@@ -491,7 +570,7 @@ $env:JAVA_HOME="E:\Java-jdk\21"
 |------|------|
 | `build.gradle` | Loom 17-SNAPSHOT + splitEnvironmentSourceSets |
 | `src/main/.../CustomBlock.java` | 统一分派中枢：placement + interaction |
-| `src/main/.../properties/model/` | 所有模型能力接口（Rotatable、Directional、SubModelProvider...） |
+| `src/main/.../properties/model/` | 所有模型能力接口（Rotatable、Directional、SubModelProvider、SignTextProvider...） |
 | `src/main/.../util/PlacementBehavior.java` | 放置挂钩接口（util 包，非渲染能力） |
 | `src/main/.../util/BakedModelSpec.java` | 烘焙数据容器 + 5 个延迟求值 handler 字段 |
 | `src/main/.../util/BakeContext.java` | 烘焙上下文（block + state + spec） |

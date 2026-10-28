@@ -59,7 +59,11 @@ public final class SignBlockClientService {
      * 将编辑好的文字行发往服务端持久化。
      * <p>
      * 使用 {@link TextBlockPayload} 编码后通过 {@link ClientPlayNetworking} 发送。
-     * 服务端 {@link SignBlockTextService} 会解码并写入 BlockEntity。
+     * 服务端 {@link com.chinesecorebuilding.network.TextBlockService} 会解码并写入 BlockEntity。
+     * </p>
+     * <p>
+     * <b>乐观更新</b>：发送 Payload 后立即更新本地 BlockEntity，
+     * 确保 GUI 关闭后渲染器能立刻看到新文字，无需等待服务端回包或区块重载。
      * </p>
      *
      * @param pos   目标文字方块位置
@@ -69,5 +73,10 @@ public final class SignBlockClientService {
         PacketByteBuf buf = PacketByteBufs.create();
         TextBlockPayload.encode(buf, pos, lines);
         ClientPlayNetworking.send(TextBlockPayload.ID, buf);
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.world != null && mc.world.getBlockEntity(pos) instanceof TextBlockEntity entity) {
+            entity.setLines(lines);
+        }
     }
 }

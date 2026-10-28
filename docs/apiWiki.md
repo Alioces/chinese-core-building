@@ -13,71 +13,145 @@
 - **新增能力 = 新增接口 + 新增消费方**，不改既有代码
 - **非渲染能力接口**（如 `PlacementBehavior`）归于 `util` 包，确保 `model` 包职责内聚
 
-```
-Block (实现接口)          Client (扫描接口)       实际效果
-─────────────────────────────────────────────────────────
-Rotatable ──────────────► RotationBakedModel      模型烘焙时应用 Y 旋转
-Directional ────────────► RotationBakedModel      同上（从 FACING 算角度）
-Offset ─────────────────► OffsetBakedModel       模型烘焙时应用 3D 偏移
-Layered ─────────────────► BlockRenderLayerMap    自动绑定 CUTOUT/TRANSLUCENT
-TextProvider ───────► TextBakedModel          模型烘焙时追加文字层顶点
-Interactive ────────────► UseBlockCallback       客户端右键打开 GUI
-PlacementBehavior ─────► CustomBlock             服务端放置自动设置朝向/旋转
+```mermaid
+flowchart LR
+    subgraph Block["方块（实现接口）"]
+        R[Rotatable]
+        D[Directional]
+        O[Offset]
+        L[Layered]
+        ST[SignTextProvider]
+        GI[GuiInteractive]
+        PB[PlacementBehavior]
+    end
 
-> **说明**：文字功能模块是公共基础设施，任何实现 `TextProvider` 的方块都可以复用
-> 文字渲染、GUI 编辑、网络同步等完整能力，不限于特定方块类型。
+    subgraph Client["客户端（扫描接口）"]
+        RBM[RotationBakedModel]
+        OBM[OffsetBakedModel]
+        BRLM[BlockRenderLayerMap]
+        TBM[TextBakedModel]
+        TBR[TextBlockRenderer]
+        GSR[GuiScreenRegistry]
+        UBC[UseBlockCallback]
+        CB[CustomBlock]
+    end
+
+    subgraph Effect["实际效果"]
+        ROT[Y 轴旋转]
+        DIR[4 方向朝向]
+        OFF[3D 偏移]
+        CUT[CUTOUT/TRANSLUCENT]
+        TXT[文字层叠加]
+        GUI[GUI 编辑]
+        PLC[自动放置朝向]
+    end
+
+    R --> RBM --> ROT
+    D --> RBM --> DIR
+    O --> OBM --> OFF
+    L --> BRLM --> CUT
+    ST --> TBM --> TXT
+    ST --> TBR --> TXT
+    GI --> GSR --> GUI
+    GI --> UBC --> GUI
+    PB --> CB --> PLC
 ```
+
+> **说明**：文字功能模块是公共基础设施，任何实现 `SignTextProvider` 的方块都可以复用
+> 文字渲染、GUI 编辑、网络同步等完整能力，不限于特定方块类型。
 
 ---
 
 ## 2. 接口层次图
 
-```
-Block (Minecraft)
-  │
-  ├── ModelBakeDecorator (阶段标识父接口)
-  │     └── TextProvider   (独立，需配合 BlockEntityProvider)
-  │           ├── getBlockEntityType()
-  │           ├── getTextEntity(World, BlockPos) [default]
-  │           ├── getTextLines(World, BlockPos)  [default]
-  │           └── getTextLineCount(World, BlockPos) [default]
-  │
-  ├── ModelWorldTransformer (阶段标识父接口)
-  │     ├── Rotatable ◄── Directional
-  │     │        │              │
-  │     │        │              └── 特化为 4 方向 (FACING)
-  │     │        │                   覆盖 getRotationAngle()
-  │     │        │                   覆盖 onPlace() → with(FACING, ...)
-  │     │        │
-  │     │        └── 通用旋转 (ROTATION 0~15)
-  │     │            getRotationAngle() 每档 22.5°
-  │     │            onPlace() → with(ROTATION, ...)
-  │     │
-  │     └── Offset             (独立，可与 Rotatable/Directional 共存)
-  │           └── getOffset(BlockState) → {dx, dy, dz}
-  │
-  ├── Layered            (独立)
-  │     └── getRenderLayerType() → SOLID | CUTOUT | TRANSLUCENT
-  │
-  ├── Interactive        (独立，声明方块交互能力)
-  │     ├── getInteraction() → BlockInteraction (服务端处理器)
-  │     └── blocksDefaultInteraction() → boolean (阻断原版默认行为)
-  │           │
-  │           └── GuiInteractive (继承，特化客户端 GUI 交互)
-  │                 ├── getGuiType() → String (GUI 类型标识符，默认 "multi_line")
-  │                 ├── getGuiTitle(BlockPos) → Text (窗口标题，默认 null)
-  │                 ├── shouldOpenGui() → boolean (始终返回 true)
-  │                 ├── canOpenGui(PlayerEntity, BlockPos) → boolean (前置条件检查)
-  │                 └── onGuiOpened(PlayerEntity, BlockPos) → void (打开后回调)
-  │
-  └── OffsetFunction     (函数式接口，供构造函数传递偏移配置)
-        └── getOffset() → {offsetXZ, offsetY}
+```mermaid
+%%{init: {'classDiagram': {'curve': 'linear'}}}%%
+classDiagram
+    class Block {
+        <<Minecraft>>
+    }
 
-util 包（非模型能力，通用挂钩）：
+    class ModelBakeDecorator {
+        <<interface, 阶段标识>>
+    }
 
-  PlacementBehavior   (放置状态后处理契约)
-    ├── Rotatable 实现 → onPlace() 设置 ROTATION
-    └── Directional 覆盖 → onPlace() 设置 FACING
+    class SignTextProvider {
+        <<interface>>
+        +getBlockEntityType()
+        +getTextEntity(World, BlockPos)
+        +getTextLines(World, BlockPos)
+        +getTextLineCount(World, BlockPos)
+    }
+
+    class ModelWorldTransformer {
+        <<interface, 阶段标识>>
+    }
+
+    class Rotatable {
+        <<interface>>
+        +getRotationAngle(BlockState)
+        +onPlace(BlockState, ItemPlacementContext)
+        ROTATION: 0~15, 每档 22.5°
+    }
+
+    class Directional {
+        <<interface>>
+        +getRotationAngle(BlockState)
+        +onPlace(BlockState, ItemPlacementContext)
+        FACING: north/east/south/west, 90° 步进
+    }
+
+    class Offset {
+        <<interface>>
+        +getOffset(BlockState) → Vec3d
+    }
+
+    class Layered {
+        <<interface>>
+        +getRenderLayerType()
+    }
+
+    class Interactive {
+        <<interface>>
+        +getInteraction()
+        +blocksDefaultInteraction()
+    }
+
+    class GuiInteractive {
+        <<interface>>
+        +getGuiType() → String
+        +getGuiTitle(BlockPos) → Text
+        +shouldOpenGui() → boolean
+        +canOpenGui(PlayerEntity, BlockPos)
+        +onGuiOpened(PlayerEntity, BlockPos)
+        GUI_TYPE_MULTI_LINE: "multi_line"
+        GUI_TYPE_SINGLE_LINE: "single_line"
+        GUI_TYPE_SIMPLE: "simple"
+    }
+
+    class OffsetFunction {
+        <<@FunctionalInterface>>
+        +getOffset()
+    }
+
+    class PlacementBehavior {
+        <<interface, util 包>>
+        +onPlace(BlockState, ItemPlacementContext)
+    }
+
+    Block <|-- ModelBakeDecorator
+    Block <|-- ModelWorldTransformer
+    Block <|-- Layered
+    Block <|-- Interactive
+    Block <|-- OffsetFunction
+    Block <|-- PlacementBehavior
+
+    ModelBakeDecorator <|-- SignTextProvider
+    ModelWorldTransformer <|-- Rotatable
+    ModelWorldTransformer <|-- Offset
+    Interactive <|-- GuiInteractive
+    Rotatable <|-- Directional
+    PlacementBehavior <|-- Rotatable
 ```
 
 ### 典型组合
@@ -88,8 +162,8 @@ util 包（非模型能力，通用挂钩）：
 | 只需旋转的装饰方块 | `Directional` + `Layered` |
 | 可自由角度旋转的方块 | `Rotatable` + `Layered` |
 | 半透明方块 | `Layered`（TRANSLUCENT） |
-| 纯文字显示方块 | `Directional` + `Offset` + `Layered` + `BlockEntityProvider` + `TextProvider` + `GuiInteractive` |
-| 可交互编辑的文字方块 | `GuiInteractive` + `TextProvider` + `BlockEntityProvider` |
+| 纯文字显示方块 | `Directional` + `Offset` + `Layered` + `BlockEntityProvider` + `SignTextProvider` + `GuiInteractive` |
+| 可交互编辑的文字方块 | `GuiInteractive` + `SignTextProvider` + `BlockEntityProvider` |
 | 需要权限控制的编辑方块 | `GuiInteractive`（覆盖 `canOpenGui` 添加权限检查） |
 
 ---
@@ -146,13 +220,14 @@ util 包（非模型能力，通用挂钩）：
 | `onPlace(BlockState, ItemPlacementContext)` | 重写 Rotatable：使用 FACING 替代 ROTATION |
 | `getOutlineShape(...)` / `getCollisionShape(...)` | 默认 fullCube，可自定义 per-direction |
 
-**getRotationAngle 计算示例**：
-```
-FACING = SOUTH → rotation=0  → 0°   → 0.0 rad
-FACING = EAST  → rotation=1  → 90°  → π/2 rad
-FACING = NORTH → rotation=2  → 180° → π   rad
-FACING = WEST  → rotation=3  → 270° → 3π/2 rad
-```
+**getRotationAngle 计算**：
+
+| FACING | rotation | 角度 | 弧度 |
+|--------|:--------:|:----:|:----:|
+| SOUTH | 0 | 0° | 0 |
+| EAST | 1 | 90° | π/2 |
+| NORTH | 2 | 180° | π |
+| WEST | 3 | 270° | 3π/2 |
 
 ---
 
@@ -163,24 +238,24 @@ FACING = WEST  → rotation=3  → 270° → 3π/2 rad
 | **用途** | 声明方块渲染时需要应用 3D 空间偏移 |
 | **依赖** | 无（可与 Rotatable/Directional 任意组合） |
 | **BlockState 属性** | 无新增（偏移量由实现类根据已有属性计算） |
-| **客户端消费方** | `OffsetBakedModel` + `TextBlockRenderer` |
+| **客户端消费方** | `OffsetBakedModel` + `OffsetDecorator` |
 
 **核心方法**：
 
 | 方法 | 说明 |
 |------|------|
-| `getOffset(BlockState)` | 返回 `{dx, dy, dz}`，单位为方块格（1.0 = 1 格） |
+| `getOffset(BlockState)` | 返回 `Vec3d`，单位为方块格（1.0 = 1 格） |
 
 **典型实现**（与 Directional 组合）：
 ```java
-public float[] getOffset(BlockState state) {
+public Vec3d getOffset(BlockState state) {
     float ox = BlockUtil.blockConstraint(1.5f); // ≈ 0.09375 格
     return switch (state.get(FACING)) {
-        case SOUTH -> new float[]{0, 0,  ox};
-        case NORTH -> new float[]{0, 0, -ox};
-        case EAST  -> new float[]{ ox, 0, 0};
-        case WEST  -> new float[]{-ox, 0, 0};
-        default    -> new float[]{0, 0, 0};
+        case SOUTH -> new Vec3d(0, 0,  ox);
+        case NORTH -> new Vec3d(0, 0, -ox);
+        case EAST  -> new Vec3d( ox, 0, 0);
+        case WEST  -> new Vec3d(-ox, 0, 0);
+        default    -> Vec3d.ZERO;
     };
 }
 ```
@@ -195,12 +270,6 @@ public float[] getOffset(BlockState state) {
 | **依赖** | 无 |
 | **客户端消费方** | `ChineseCoreBuildingClient.registerRenderLayers()` 自动扫描注册 |
 
-**核心方法**：
-
-| 方法 | 返回值 |
-|------|--------|
-| `getRenderLayerType()` | `RenderLayerType`（默认 SOLID） |
-
 **RenderLayerType 枚举**：
 
 | 枚举值 | 对应 Minecraft RenderLayer | 适用场景 |
@@ -211,7 +280,7 @@ public float[] getOffset(BlockState state) {
 
 ---
 
-### 3.5 TextProvider（文字层能力）
+### 3.5 SignTextProvider（文字层能力）
 
 | 项目 | 说明 |
 |------|------|
@@ -231,13 +300,17 @@ public float[] getOffset(BlockState state) {
 | `getTextLineCount(World, BlockPos)` | default | 获取文字行数量；不存在返回 0 |
 
 **与其他接口的关系**：
-```
-TextProvider 属于 ModelBakeDecorator 阶段（往模型里追加顶点）。
-变换阶段（Rotatable/Offset）作用在装饰阶段的结果之上。
-TextBlockRenderer 会自动检查：
-  - Directional / Rotatable → 应用 Y 轴旋转（绕 0.5,0.5,0.5）
-  - Offset                  → 应用 3D 偏移
-  - 然后再渲染每行 TextLine
+
+```mermaid
+flowchart TD
+    ST[SignTextProvider\nModelBakeDecorator 阶段] -->|追加顶点| TBM[TextBakedModel]
+    TBM -->|装饰阶段| ROT[Rotatable / Directional]
+    ROT -->|变换阶段| OFF[Offset / RotationBakedModel]
+    OFF --> OUTPUT[最终模型输出]
+
+    ST2[SignTextProvider] -->|BlockEntityRenderer| TBR[TextBlockRenderer]
+    TBR -->|装饰器链| URP[UnifiedRenderPipelineRegistry]
+    URP -->|Offset→Rotation→Text| RENDER[每帧渲染]
 ```
 
 ---
@@ -258,27 +331,14 @@ TextBlockRenderer 会自动检查：
 | `blocksDefaultInteraction()` | `boolean` | 是否阻断原版右键默认行为（放置、容器等），默认 true |
 
 **CustomBlock.onUse 两级决策链**：
-```
-1. 若方块实现 Interactive 且 getInteraction() != null
-   → 完全交给 handler，handler 的 ActionResult 决定一切
 
-2. 若 getInteraction() == null 但 blocksDefaultInteraction() == true
-   → 返回 CONSUME 阻断原版默认行为（防止 BlockItem 在旁边放置新方块）
-
-3. 否则 → super.onUse() 走原版逻辑（通常返回 PASS 放行放置）
-```
-
-**典型实现**：
-```java
-public class MyBlock extends CustomBlock implements Interactive {
-    @Override
-    public BlockInteraction getInteraction() {
-        return (state, world, pos, player, hand, hit) -> {
-            // 自定义服务端逻辑
-            return ActionResult.SUCCESS;
-        };
-    }
-}
+```mermaid
+flowchart TD
+    ONUSE["CustomBlock.onUse()"] --> CHK1{"instanceof Interactive\n&& getInteraction() != null?"}
+    CHK1 -->|是| HANDLER["handler.interact(...)\n完全交给 handler 处理"]
+    CHK1 -->|否| CHK2{"blocksDefaultInteraction()?"}
+    CHK2 -->|是| CONSUME["返回 CONSUME\n阻断原版放置"]
+    CHK2 -->|否| SUPER["super.onUse()\n走原版逻辑"]
 ```
 
 ---
@@ -287,7 +347,7 @@ public class MyBlock extends CustomBlock implements Interactive {
 
 | 项目 | 说明 |
 |------|------|
-| **用途** | 继承 `Interactive`，特化客户端右键打开 GUI 的逻辑，支持前置条件检查、打开后回调、GUI 类型声明和自定义标题 |
+| **用途** | 继承 `Interactive`，特化客户端右键打开 GUI 的逻辑 |
 | **继承** | `extends Interactive` |
 | **依赖** | 无（可独立使用） |
 | **消费方** | `GuiScreenRegistry`（客户端 Screen 工厂注册表） |
@@ -296,76 +356,47 @@ public class MyBlock extends CustomBlock implements Interactive {
 
 | 方法 | 返回值 | 说明 |
 |------|--------|------|
-| `getGuiType()` | `String` | GUI 类型标识符，默认 `"multi_line"`，内置常量 `GUI_TYPE_MULTI_LINE` / `GUI_TYPE_SINGLE_LINE` |
+| `getGuiType()` | `String` | GUI 类型标识符，默认 `"multi_line"` |
 | `getGuiTitle(BlockPos)` | `Text` | 窗口标题，返回 null 时使用 Screen 默认标题 |
-| `canOpenGui(PlayerEntity, BlockPos)` | `boolean` | 打开 GUI 前的前置条件检查（权限、距离等），默认 true |
+| `canOpenGui(PlayerEntity, BlockPos)` | `boolean` | 打开 GUI 前的前置条件检查，默认 true |
 | `onGuiOpened(PlayerEntity, BlockPos)` | `void` | GUI 打开后的回调逻辑（音效、粒子等），默认无操作 |
 | `shouldOpenGui()` | `boolean` | 始终返回 true（标记需要打开 GUI） |
 
-**与 Interactive 的区别**：
-- `Interactive` 只负责服务端交互和默认行为阻断
-- `GuiInteractive` 专门处理客户端 GUI 交互，提供类型声明、标题自定义、前置检查和回调机制
+**GUI 类型常量**：
 
-**典型实现**：
-```java
-public class MyTextBlock extends CustomBlock implements GuiInteractive, TextProvider {
-    @Override
-    public String getGuiType() {
-        return GUI_TYPE_SINGLE_LINE; // 使用单行编辑器
-    }
+| 常量 | 值 | 对应 Screen | 说明 |
+|------|------|------------|------|
+| `GUI_TYPE_MULTI_LINE` | `"multi_line"` | `TextBlockScreen` | 多行文字编辑器 |
+| `GUI_TYPE_SINGLE_LINE` | `"single_line"` | `SingleLineScreen` | 单行编辑器（含 XYZ） |
+| `GUI_TYPE_SIMPLE` | `"simple"` | `SimpleTextScreen` | 简化编辑器（无 XYZ） |
 
-    @Override
-    public Text getGuiTitle(BlockPos pos) {
-        return Text.literal("我的自定义标题"); // 或返回 null 使用默认标题
-    }
+**客户端处理流程**：
 
-    @Override
-    public boolean canOpenGui(PlayerEntity player, BlockPos pos) {
-        // 示例：只有 OP 玩家才能打开编辑界面
-        return player.hasPermissionLevel(2);
-    }
+```mermaid
+sequenceDiagram
+    participant Player as 玩家
+    participant UBC as UseBlockCallback
+    participant GI as GuiInteractive
+    participant GSR as GuiScreenRegistry
+    participant Screen as Screen
 
-    @Override
-    public void onGuiOpened(PlayerEntity player, BlockPos pos) {
-        // 示例：打开 GUI 时播放音效
-        player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
-    }
-}
-```
-
-**客户端处理逻辑**：
-```
-UseBlockCallback 检测到 GuiInteractive
-  → 调用 canOpenGui(player, pos) 检查前置条件
-    → 若返回 false → 阻断，返回 SUCCESS
-    → 若返回 true
-      → 读取 guiType = guiInteractive.getGuiType()
-      → 读取 title = guiInteractive.getGuiTitle(pos)
-      → GuiScreenRegistry.createScreen(guiType, pos, title)
-        → 查找对应工厂函数 → 创建 Screen 实例
-        → 若类型未注册 → fallback 到 TextBlockScreen
-      → MinecraftClient.setScreen(screen)
-      → 调用 onGuiOpened(player, pos) 执行回调
-      → 返回 SUCCESS
-```
-
-**新增 GUI 类型（开闭原则实践）**：
-```java
-// 1. 新建 Screen 类
-public class ConfigScreen extends Screen {
-    public ConfigScreen(BlockPos pos, Text title) {
-        super(title != null ? title : Text.literal("配置面板"));
-    }
-}
-
-// 2. 在客户端初始化时注册工厂
-GuiScreenRegistry.register("config", ConfigScreen::new);
-
-// 3. 方块声明使用此类型
-public class ConfigBlock extends CustomBlock implements GuiInteractive {
-    @Override
-    public String getGuiType() { return "config"; }
-}
+    Player->>UBC: 右键方块
+    UBC->>GI: instanceof GuiInteractive?
+    alt 未实现 GuiInteractive
+        UBC-->>Player: 走默认逻辑
+    end
+    GI->>UBC: shouldOpenGui() = true
+    UBC->>GI: canOpenGui(player, pos)
+    alt 条件不满足
+        GI-->>UBC: false → 阻断
+    end
+    GI->>UBC: true
+    UBC->>GI: getGuiType() + getGuiTitle(pos)
+    UBC->>GSR: createScreen(type, pos, title)
+    GSR->>Screen: new Screen(pos, title)
+    GSR-->>UBC: screen 实例
+    UBC->>Player: setScreen(screen)
+    UBC->>GI: onGuiOpened(player, pos)
 ```
 
 ---
@@ -377,24 +408,7 @@ public class ConfigBlock extends CustomBlock implements GuiInteractive {
 | **用途** | 封装完整的右键处理逻辑，由 `Interactive.getInteraction()` 返回 |
 | **类型** | `@FunctionalInterface` |
 
-**核心方法**：
-
-| 方法 | 参数 | 返回值 |
-|------|------|--------|
-| `interact(...)` | `BlockState, World, BlockPos, PlayerEntity, Hand, BlockHitResult` | `ActionResult` |
-
-**使用方式**：
-```java
-public class MyTextBlock extends CustomBlock implements Interactive {
-    @Override
-    public BlockInteraction getInteraction() {
-        return (state, world, pos, player, hand, hit) -> {
-            // 自定义服务端逻辑
-            return ActionResult.SUCCESS;
-        };
-    }
-}
-```
+**核心方法**：`ActionResult interact(BlockState, World, BlockPos, PlayerEntity, Hand, BlockHitResult)`
 
 ---
 
@@ -406,12 +420,6 @@ public class MyTextBlock extends CustomBlock implements Interactive {
 | **类型** | `@FunctionalInterface` |
 | **与 Offset 的区别** | `Offset` 是方块的**实例方法**（运行时根据 BlockState 动态计算）；`OffsetFunction` 是**构造时的静态配置** |
 
-**核心方法**：
-
-| 方法 | 返回值 |
-|------|--------|
-| `getOffset()` | `{offsetXZ, offsetY}`（长度为 2） |
-
 ---
 
 ### 3.9 PlacementBehavior（放置行为挂钩）
@@ -422,22 +430,20 @@ public class MyTextBlock extends CustomBlock implements Interactive {
 | **位置** | `util` 包 —— 纯工具接口，不涉及方块模型渲染能力 |
 | **继承关系** | `Rotatable extends PlacementBehavior` → `Directional extends Rotatable` |
 | **消费方** | `CustomBlock.getPlacementState()` 通过 `instanceof` 分派调用 |
-| **核心方法** | `onPlace(BlockState baseState, ItemPlacementContext ctx)` |
 
 **分派流程**：
-```
-CustomBlock.getPlacementState(ctx)
-  → super.getPlacementState(ctx)          // Block.getDefaultState()
-  → if (this instanceof PlacementBehavior)
-      → behavior.onPlace(state, ctx)
-          ├─ Rotatable.onPlace  → state.with(ROTATION, ...)
-          └─ Directional.onPlace → state.with(FACING, ...)
-```
 
-**设计理由**：
-由于 Java 类方法优先于接口 default 方法，`Block.getPlacementState()` 永远优先。
-因此采用独立命名的 `onPlace()` 挂钩 + `CustomBlock` 显式分派，
-每个实现类仅需 `implements Rotatable` / `implements Directional` 即可自动获得放置行为。
+```mermaid
+flowchart TD
+    CB["CustomBlock.getPlacementState(ctx)"] --> BASE["super.getPlacementState(ctx)\n= Block.getDefaultState()"]
+    BASE --> CHK{"this instanceof\nPlacementBehavior?"}
+    CHK -->|是| ONPLACE["behavior.onPlace(state, ctx)"]
+    ONPLACE --> ROT{"Rotatable?"}
+    ROT -->|是| ROT_STATE["state.with(ROTATION, ...)"]
+    ONPLACE --> DIR{"Directional?"}
+    DIR -->|是| DIR_STATE["state.with(FACING, ...)"]
+    CHK -->|否| RETURN["返回 state"]
+```
 
 ---
 
@@ -447,28 +453,17 @@ CustomBlock.getPlacementState(ctx)
 
 | 阶段标识 | 职责 | 属于此阶段的能力接口 |
 |----------|------|---------------------|
-| `ModelBakeDecorator` | 往模型顶点流里**追加新的几何数据**（如文字层） | `TextProvider` |
+| `ModelBakeDecorator` | 往模型顶点流里**追加新的几何数据**（如文字层） | `SignTextProvider` |
 | `ModelWorldTransformer` | 对**所有已有顶点**做世界坐标变换（旋转、偏移） | `Rotatable` / `Directional` / `Offset` |
 
-**执行顺序保证**：
-```
-ModelPluginRegistry.registerAll()
-  → 先注册所有 DECORATOR 阶段插件（往模型里加东西）
-  → 再注册所有 TRANSFORMER 阶段插件（对所有顶点做变换）
-```
+### 4.2 插件链结构（从内向外）
 
-因此装饰层（如文字）产生的顶点会自动被旋转/偏移，无需在 BlockEntityRenderer 里手动重复变换逻辑。
-
-### 4.2 插件链结构（从外向内）
-
+```mermaid
+flowchart LR
+    ORIGIN["原始模型"] --> TEXT["TextBakedModel\n最内层，最先 emitBlockQuads"]
+    TEXT --> ROT["RotationBakedModel\nRotatable / Directional"]
+    ROT --> OFF["OffsetBakedModel\n最外层，最后 emitBlockQuads"]
 ```
-OffsetBakedModel         ← 最外层，最后 emitBlockQuads
-  → RotationBakedModel
-    → TextBakedModel     ← 最内层，最先 emitBlockQuads
-      → 原始模型
-```
-
-`RenderContext.pushTransform` 的作用方向是内向外，因此原始模型的面片先被 pushTransform，然后是 TextBakedModel 追加的顶点，最后由 Rotation/Offset 统一变换。
 
 ### 4.3 性能保证
 
@@ -480,40 +475,36 @@ OffsetBakedModel         ← 最外层，最后 emitBlockQuads
 
 ## 5. 客户端消费架构
 
-```
-ChineseCoreBuildingClient.onInitializeClient()
-│
-├── registerRenderLayers()
-│     └── 遍历 Registries.BLOCK → 扫描 Layered → BlockRenderLayerMap.putBlock()
-│
-├── ModelPluginRegistry
-│     ├── register(Phase.DECORATOR, block -> block instanceof TextProvider, TextBakedModel::new)
-│     ├── register(Phase.TRANSFORMER, block -> block instanceof Rotatable, RotationBakedModel::new)
-│     ├── register(Phase.TRANSFORMER, block -> block instanceof Offset,    OffsetBakedModel::new)
-│     └── registerAll()  // 先装饰后变换的顺序保证
-│
-├── UnifiedRenderPipelineRegistry.initialize()
-│     ├── 注册 RotationDecorator, OffsetDecorator
-│     └── TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）
-│
-├── BlockEntityRendererFactories.register(
-      TextBlockRenderer 使用完整装饰器链：
-        OffsetDecorator → RotationDecorator → TextDecorator
-      保证 BlockEntityRenderer 管线与 BakedModel 管线变换一致
-    )
-│         TestSignBlock.ENTITY_TYPE,
-│         TextBlockRenderer::new
-│     )
-│
-├── GuiScreenRegistry
-│     ├── register(GUI_TYPE_MULTI_LINE, TextBlockScreen::new)
-│     ├── register(GUI_TYPE_SINGLE_LINE, SingleLineScreen::new)
-│     └── 新增 GUI 类型只需在此注册，UseBlockCallback 无需修改
-│
-└── UseBlockCallback.EVENT.register(...)
-      └── 客户端右键 → GuiInteractive
-            → getGuiType() + getGuiTitle()
-            → GuiScreenRegistry.createScreen() → 打开对应 Screen
+```mermaid
+flowchart TD
+    CCBC["ChineseCoreBuildingClient.onInitializeClient()"]
+
+    CCBC --> RRL["registerRenderLayers()"]
+    RRL -->|"遍历 Registries.BLOCK"| SCAN1["扫描 Layered"]
+    SCAN1 --> BRLM["BlockRenderLayerMap.putBlock()"]
+
+    CCBC --> MPR["ModelPluginRegistry"]
+    MPR --> REG1["DECORATOR: TextBakedModel ← SignTextProvider"]
+    MPR --> REG2["TRANSFORMER: RotationBakedModel ← Rotatable"]
+    MPR --> REG3["TRANSFORMER: OffsetBakedModel ← Offset"]
+    MPR --> REGALL["registerAll() 先装饰后变换"]
+
+    CCBC --> URP["UnifiedRenderPipelineRegistry.initialize()"]
+    URP --> UREG1["注册 RotationDecorator"]
+    URP --> UREG2["注册 OffsetDecorator"]
+
+    CCBC --> INIT["Renderers.initRenderers()"]
+    INIT --> REGDIR["BlockEntityRendererRegistry.register('text', TextBlockRenderer::new)"]
+
+    CCBC --> BERF["registerBlockEntityRenderers()"]
+    BERF -->|"遍历 SignTextProvider"| BREG["注册 BlockEntityRenderer"]
+
+    CCBC --> GSR["GuiScreenRegistry"]
+    GSR --> G_MULTI["register('multi_line', TextBlockScreen::new)"]
+    GSR --> G_SINGLE["register('single_line', SingleLineScreen::new)"]
+    GSR --> G_SIMPLE["register('simple', SimpleTextScreen::new)"]
+
+    CCBC --> UBC["UseBlockCallback.EVENT.register()"]
 ```
 
 ### 渲染管线对比
@@ -526,7 +517,7 @@ ChineseCoreBuildingClient.onInitializeClient()
 | **BlockEntity 渲染** | TextBlockRenderer | 每帧渲染 | 使用完整装饰器链：Offset→Rotation→Text |
 | **渲染层绑定** | BlockRenderLayerMap | 初始化一次 | Layered.getRenderLayerType() → RenderLayer 映射 |
 
-> **关键一致性保证**：TextBlockRenderer 通过 `UnifiedRenderPipelineRegistry.createBlockEntityChain()` 获取完整装饰器链（Offset→Rotation→Text），与 BakedModel 管线使用相同的变换逻辑，保证方块模型和文字层严格对齐。TextDecorator 内部固定绕 Y 轴旋转 180°，使文字面向外部玩家。
+> **关键一致性保证**：TextBlockRenderer 通过 `UnifiedRenderPipelineRegistry.createBlockEntityChain()` 获取完整装饰器链（Offset→Rotation→Text），与 BakedModel 管线使用相同的变换逻辑，保证方块模型和文字层严格对齐。
 
 ---
 
@@ -534,49 +525,38 @@ ChineseCoreBuildingClient.onInitializeClient()
 
 ### 6.1 文字数据流
 
-```
-客户端文字编辑 GUI (TextBlockScreen / SingleLineScreen)
-  │
-  ├─ 编辑 editingLines (副本列表)
-  │
-  └─ 点击"保存"
-       │
-       ▼
-  TextBlockClientService.saveLines(pos, lines)
-       │
-       ├─ TextBlockPayload.encode(buf, pos, lines)
-       │     └─ NBT 序列化: BlockPos + NbtList(TextLine NBT)
-       │
-       └─ ClientPlayNetworking.send(ID, buf)
-             │
-             ▼
-  服务端 TextBlockService (接收器)
-       │
-       ├─ TextBlockPayload.decode(buf) → Decoded(pos, lines)
-       │
-       └─ saveLines(world, pos, lines)
-             │
-             └─ entity.setLines(lines)
-                   │
-                   └─ markModified()
-                         │
-                         ├─ markDirty() → 持久化到磁盘
-                         └─ syncToClient() → 广播更新包
+```mermaid
+sequenceDiagram
+    participant GUI as 客户端 GUI<br/>TextBlockScreen / SingleLineScreen / SimpleTextScreen
+    participant Service as SignBlockClientService
+    participant Net as ClientPlayNetworking
+    participant Server as 服务端 TextBlockService
+    participant Entity as TextBlockEntity
+    participant World as World
+
+    GUI->>GUI: 编辑 editingLines（副本列表）
+    GUI->>GUI: 点击"保存"
+    GUI->>Service: saveLines(pos, lines)
+    Service->>Service: TextBlockPayload.encode(buf, pos, lines)
+    Service->>Net: send(ID, buf)
+    Net-->>Server: 接收数据包
+    Server->>Server: TextBlockPayload.decode(buf)
+    Server->>Entity: setLines(lines)
+    Entity->>Entity: markDirty() → 持久化到磁盘
+    Entity->>World: syncToClient() → 广播更新包
 ```
 
 ### 6.2 核心数据结构
 
 **TextLine（文字行记录）**：
-```java
-public record TextLine(
-    Text text,           // 文字内容（支持 JSON 富文本）
-    Vec3d position,      // 方块空间相对偏移 (0.5,0.5,1.0 = +Z 面中心)
-    int color,           // 文字颜色 0xRRGGBB
-    float scale,         // 缩放因子（默认 1.0）
-    boolean glowing,     // 是否发光
-    NbtCompound extra    // 预留扩展容器
-)
-```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `text` | `Text` | 文字内容（支持 JSON 富文本） |
+| `position` | `Vec3d` | 方块空间相对偏移（默认 0.5, 0.6, 1.01 = +Z 面中心） |
+| `color` | `int` | 文字颜色 0xAARRGGBB |
+| `scale` | `float` | 缩放因子（默认 1.0） |
+| `glowing` | `boolean` | 是否发光 |
 
 **TextBlockEntity（文字方块 BlockEntity）**：
 - 继承 `CustomBlockEntity`（统一基类）
@@ -589,10 +569,27 @@ public record TextLine(
 
 ### 7.1 CustomBlockEntity
 
-| 项目 | 说明 |
-|------|------|
-| **用途** | 本模组 BlockEntity 统一基类，封装修改标记和网络同步逻辑 |
-| **继承** | `net.minecraft.block.entity.BlockEntity` |
+```mermaid
+%%{init: {'classDiagram': {'curve': 'linear'}}}%%
+classDiagram
+    class BlockEntity {
+        <<Minecraft>>
+    }
+    class CustomBlockEntity {
+        +markModified()
+        +syncToClient()
+        +toInitialChunkDataNbt()
+        +toUpdatePacket()
+    }
+    class TextBlockEntity {
+        +List~TextLine~ lines
+        +getLines()
+        +setLines()
+    }
+
+    BlockEntity <|-- CustomBlockEntity
+    CustomBlockEntity <|-- TextBlockEntity
+```
 
 **核心方法**：
 
@@ -603,21 +600,68 @@ public record TextLine(
 | `toInitialChunkDataNbt()` | 构造初始区块数据 NBT（追加 writeNbt 自定义字段） |
 | `toUpdatePacket()` | 生成客户端同步用的更新数据包 |
 
-**继承层次**：
-```
-BlockEntity (Minecraft)
-  └── CustomBlockEntity
-        ├── TextBlockEntity        — 可编辑文字方块
-        └── 未来的 XXXBlockEntity  — 其他功能方块实体
+---
+
+## 8. GUI 继承层次
+
+```mermaid
+%%{init: {'classDiagram': {'curve': 'linear'}}}%%
+classDiagram
+    class Screen {
+        <<Minecraft>>
+    }
+    class AbstractTextScreen {
+        <<abstract>>
+        #BlockPos blockPos
+        #List~TextLine~ editingLines
+        #TextFieldWidget textField, posXField, posYField, posZField
+        #TextFieldWidget colorField, scaleField
+        #ButtonWidget glowBtn, saveBtn, cancelBtn
+        +refreshEditFields(int)
+        +saveEditToIndex(int)
+        +save()
+        +drawColorPreview(DrawContext, int)
+    }
+    class BaseSingleLineTextScreen {
+        <<abstract>>
+        +showPositionFields()* boolean
+        +getEditorTitle()* String
+        +init()
+        +render(DrawContext, int, int, float)
+        +createPositionFields(int, int)
+        -loadLines(BlockPos) List~TextLine~
+    }
+    class TextBlockScreen {
+        多行编辑器
+        +selectedIndex
+        +listScroll
+        +renderListRows(DrawContext)
+        +drawScrollbar(DrawContext)
+    }
+    class SingleLineScreen {
+        单行编辑器（含 XYZ 位置）
+        showPositionFields() = true
+    }
+    class SimpleTextScreen {
+        简化编辑器（无 XYZ 位置）
+        showPositionFields() = false
+        +getDefaultPosition() Vec3d
+    }
+
+    Screen <|-- AbstractTextScreen
+    AbstractTextScreen <|-- TextBlockScreen
+    AbstractTextScreen <|-- BaseSingleLineTextScreen
+    BaseSingleLineTextScreen <|-- SingleLineScreen
+    BaseSingleLineTextScreen <|-- SimpleTextScreen
 ```
 
 ---
 
-## 8. 实现规范 Checklist
+## 9. 实现规范 Checklist
 
 实现一个带文字层的方块需满足：
 
-- [ ] Block 类 `implements Directional, Offset, Layered, BlockEntityProvider, TextProvider, GuiInteractive`
+- [ ] Block 类 `implements Directional, Offset, Layered, BlockEntityProvider, SignTextProvider, GuiInteractive`
 - [ ] 构造函数：`setDefaultState(initDirection(getDefaultState()))`
 - [ ] `appendProperties`：显式调用 `Directional.super.appendProperties(builder)`
 - [ ] `getRenderLayerType()` 返回 CUTOUT（文字方块通常有透明区域）
@@ -631,9 +675,37 @@ BlockEntity (Minecraft)
 
 ---
 
-## 9. 扩展新能力（开闭原则实践）
+## 10. 渲染器注册机制
 
-想给方块加一种新的渲染能力（比如发光效果、动态纹理、粒子叠加）？
+> **历史问题**：原设计通过 `Renderers.Registry` 枚举 + 类字面量 `TextBlockRenderer.class` 触发静态块，
+> 但 JVM 类字面量不触发类初始化（JLS §12.4.1），导致 `BlockEntityRendererRegistry` 工厂从未注册，
+> 所有文字方块均无 BlockEntityRenderer。
+
+当前实现：`Renderers.initRenderers()` 直接调用 `BlockEntityRendererRegistry.register("text", TextBlockRenderer::new)`，
+确保工厂在 `registerBlockEntityRenderers()` 之前注册完毕。
+
+```mermaid
+sequenceDiagram
+    participant Init as ChineseCoreBuildingClient
+    participant RR as Renderers.initRenderers()
+    participant Reg as BlockEntityRendererRegistry
+    participant BER as registerBlockEntityRenderers()
+
+    Init->>RR: initRenderers()
+    RR->>Reg: register("text", TextBlockRenderer::new)
+    Note over Reg: 工厂已注册 ✅
+    Init->>BER: registerBlockEntityRenderers()
+    BER->>Reg: factories.get("text")
+    Reg-->>BER: TextBlockRenderer::new ✅
+    BER->>BER: 遍历 SignTextProvider 方块
+    BER->>BER: 每个方块注册 BlockEntityRenderer
+```
+
+---
+
+## 11. 扩展新能力（开闭原则实践）
+
+想给方块加一种新的渲染能力？
 
 **三步**，不改一行既有代码：
 
@@ -644,9 +716,7 @@ interface Glowable extends ModelWorldTransformer {
 }
 
 // 2. 新建消费方
-class GlowBakedModel extends ForwardingBakedModel {
-    // 在 RotationBakedModel / OffsetBakedModel 同层级实现
-}
+class GlowBakedModel extends ForwardingBakedModel { ... }
 
 // 3. 在 ChineseCoreBuildingClient.onInitializeClient() 中注册
 ModelPluginRegistry.register(
@@ -660,19 +730,19 @@ ModelPluginRegistry.register(
 
 ---
 
-## 10. 常见问题
+## 12. 常见问题
 
 ### Q: 为什么文字渲染在两个地方都有？
 
-- **TextBakedModel**（模型烘焙阶段）：当前版本仅代理原始模型，为未来升级预留（动态贴图注入 RenderContext）
+- **TextBakedModel**（模型烘焙阶段）：当前版本仅代理原始模型，为未来升级预留
 - **TextBlockRenderer**（BlockEntityRenderer）：当前实际渲染文字的地方，每帧调用
 
-两者使用完全一致的变换公式和旋转中心，保证文字与模型同步。
-
-### Q: 为什么 rotateY 用 `-angle`？
-
-`RotationBakedModel` 里用的公式是"顺时针为正"（符合直觉），但 `MatrixStack.multiply(Quaternionf.rotateY)` 是右手系逆时针为正，所以传入 `-angle` 让它等效于顺时针旋转。
+两者使用完全一致的装饰器链（Offset→Rotation→Text），保证文字与模型同步。
 
 ### Q: 如何添加新的交互逻辑？
 
-实现 `Interactive` 接口的 `getInteraction()` 方法，返回一个 `BlockInteraction` 函数式接口实例即可。服务端会自动分发执行。
+实现 `Interactive` 接口的 `getInteraction()` 方法，返回一个 `BlockInteraction` 函数式接口实例即可。
+
+### Q: Renderers 为什么不再使用 Registry 枚举？
+
+枚举 + 类字面量模式在 JVM 中不触发类初始化，导致静态块不执行。改用直接注册方式更简单可靠。

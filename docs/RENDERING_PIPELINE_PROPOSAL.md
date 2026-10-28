@@ -1,6 +1,6 @@
 # 渲染管线技术方案与实施报告
 
-> 版本：2026-10-18 · 状态：反映当前代码实际实现
+> 版本：2026-10-29 · 状态：反映当前代码实际实现
 
 ---
 
@@ -12,41 +12,39 @@
 
 ### 1.2 架构分层
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  Layer 0: 接口声明层 (src/main/.../properties/model/)        │
-│  Block implements Rotatable / SubModelProvider / ...         │
-│  → 方块只管 declare，不关心 who consumes                    │
-├──────────────────────────────────────────────────────────────┤
-│  Layer 1: 函数式处理器 (src/main/.../util/handler/)          │
-│  SubModelHandler, TextureOverrideHandler, EmissiveHandler,   │
-│  AnimationHandler, MultiBlockHandler                         │
-│  → 方块注入自定义 Lambda，供 Plugin 调用                    │
-├──────────────────────────────────────────────────────────────┤
-│  Layer 2: 烘焙数据容器 (src/main/.../util/)                  │
-│  BakedModelSpec, BakeContext, AnchorPoint, Transform         │
-│  → 跨 main↔client 共享的数据结构                             │
-├──────────────────────────────────────────────────────────────┤
-│  Layer 3: 插件链 (src/client/.../model/plugin/)              │
-│  SubModelComposer / DynamicTexture / Animation / Emissive    │
-│  / MultiBlock — 5 个 ModelBakePlugin，按优先级排序执行       │
-│  → bake 阶段：遍历 handler 填充 BakedModelSpec               │
-├──────────────────────────────────────────────────────────────┤
-│  Layer 4: 后处理包装 (src/client/.../model/postProcessing/)  │
-│  SubModelBakedModel / RotationBakedModel / OffsetBakedModel  │
-│  / TextBakedModel / DecoratorBakedModel(基类)                │
-│  → modifyModelAfterBake 阶段：链式包装原模型                 │
-├──────────────────────────────────────────────────────────────┤
-│  Layer 5: 装饰器管线 (src/client/.../renderer/pipeline/)     │
-│  api/: UnifiedRenderDecorator / BakedModelDecorator /        │
-│        BlockEntityDecorator                                  │
-│  context/: BakedModelContext / BlockEntityRendererContext    │
-│  decorator/: OffsetDecorator / RotationDecorator /           │
-│              TextDecorator / SubModelDecorator /             │
-│              SubModelRendererBase                            │
-│  UnifiedRenderPipelineRegistry: 装饰器注册与链式组装         │
-│  → 统一 BakedModel 和 BlockEntityRenderer 两条渲染管线       │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph L0["Layer 0: 接口声明层 (src/main/.../properties/model/)"]
+        style L0 fill:#e1f5fe,stroke:#01579b
+        L0_desc["Block implements Rotatable / SubModelProvider / ...\n→ 方块只管 declare，不关心 who consumes"]
+    end
+
+    subgraph L1["Layer 1: 函数式处理器 (src/main/.../util/handler/)"]
+        style L1 fill:#e8f5e9,stroke:#1b5e20
+        L1_desc["SubModelHandler, TextureOverrideHandler, EmissiveHandler,\nAnimationHandler, MultiBlockHandler\n→ 方块注入自定义 Lambda，供 Plugin 调用"]
+    end
+
+    subgraph L2["Layer 2: 烘焙数据容器 (src/main/.../util/)"]
+        style L2 fill:#fff3e0,stroke:#e65100
+        L2_desc["BakedModelSpec, BakeContext, AnchorPoint, Transform\n→ 跨 main↔client 共享的数据结构"]
+    end
+
+    subgraph L3["Layer 3: 插件链 (src/client/.../model/plugin/)"]
+        style L3 fill:#fce4ec,stroke:#880e4f
+        L3_desc["5 个 ModelBakePlugin，按优先级排序执行\n→ bake 阶段：遍历 handler 填充 BakedModelSpec"]
+    end
+
+    subgraph L4["Layer 4: 后处理包装 (src/client/.../model/postProcessing/)"]
+        style L4 fill:#e8eaf6,stroke:#311b92
+        L4_desc["SubModelBakedModel / RotationBakedModel / OffsetBakedModel\n/ TextBakedModel / DecoratorBakedModel(基类)\n→ modifyModelAfterBake 阶段：链式包装原模型"]
+    end
+
+    subgraph L5["Layer 5: 装饰器管线 (src/client/.../renderer/pipeline/)"]
+        style L5 fill:#f3e5f5,stroke:#4a148c
+        L5_desc["api/: 装饰器接口 + context/: 渲染上下文\n+ decorator/: Offset/Rotation/Text/SubModel\n+ UnifiedRenderPipelineRegistry: 注册与链式组装\n→ 统一 BakedModel 和 BlockEntityRenderer 两条渲染管线"]
+    end
+
+    L0 --> L1 --> L2 --> L3 --> L4 --> L5
 ```
 
 ---
@@ -55,115 +53,95 @@
 
 ### 2.1 两阶段时序
 
-```
-游戏启动 → 模型资源加载
-  │
-  ├─ [Bake 阶段] ModelBakePluginRegistry.bakeChain()
-  │   │  触发条件: block instanceof ModelBakeDecorator
-  │   │  调用方式: ModelPluginRegistry.registerBakeChainBridge()
-  │   │           → ModelLoadingPlugin.modifyModelAfterBake 回调中
-  │   │  输入:     block.getDefaultState()  ← ⚠️ 当前用默认状态
-  │   │
-  │   ├─ Plugin 1: SubModelComposerPlugin  (优先级 -1000)
-  │   │   ├─ 静态路径: handler.handle(anchor, defaultState) → spec.addSubModel()
-  │   │   └─ 动态路径: if (DynamicModelDecorator) → spec.registerDeferredSubModelHandler()
-  │   │
-  │   ├─ Plugin 2: DynamicTexturePlugin    (优先级 -900)
-  │   │   ├─ 静态路径: handler.handle(defaultState) → spec.applyTextureOverrides()
-  │   │   └─ 动态路径: if (DynamicModelDecorator) → spec.registerDeferredTextureHandler()
-  │   │
-  │   ├─ Plugin 3: AnimationControllerPlugin (优先级 -500)
-  │   │   └─ 始终: spec.setAnimationHandler(handler)
-  │   │
-  │   ├─ Plugin 4: EmissivePlugin           (优先级 -400)
-  │   │   ├─ 静态路径: spec.setEmissiveLevel(handler.handle(defaultState))
-  │   │   └─ 动态路径: if (DynamicModelDecorator) → spec.registerDeferredEmissiveHandler()
-  │   │
-  │   └─ Plugin 5: MultiBlockCoordinatorPlugin (优先级 100)
-  │       └─ 始终: spec.addConnectedPart(handler.handle(...))
-  │
-  ├─ [After-Bake 阶段] ModelPluginRegistry.registerAll()
-  │   │  Fabric 回调: modifyModelAfterBake
-  │   │  包装顺序: Offset(Rotation(Text/SubModel(Original)))
-  │   │
-  │   ├─ DECORATOR 层 (先注册 → 内层)
-  │   │   ├─ SubModelBakedModel  ← BakedModelSpec 含 subModels + deferred handlers
-  │   │   └─ TextBakedModel      ← TextProvider
-  │   │
-  │   └─ TRANSFORMER 层 (后注册 → 外层)
-  │       ├─ RotationBakedModel  ← Rotatable / Directional
-  │       └─ OffsetBakedModel    ← Offset
-  │
-  └─ [装饰器管线] UnifiedRenderPipelineRegistry.initialize()
-      │  注册: RotationDecorator, OffsetDecorator
-      │  TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）
-      │  BlockEntityRenderer 管线通过 createBlockEntityChain() 获取完整装饰器链:
-      │    OffsetDecorator → RotationDecorator → TextDecorator
-      │  TextDecorator 内部固定绕 Y 轴旋转 180° 使文字面向外部玩家
-      │
-      ├─ BakedModel 管线: 通过 DecoratorBakedModel 委托给装饰器
-      │   ├─ OffsetBakedModel → OffsetDecorator.decorate()
-      │   └─ RotationBakedModel → RotationDecorator.decorate()
-      │
-      └─ BlockEntityRenderer 管线: 通过 TextBlockRenderer 委托给装饰器
-          └─ TextDecorator.decorate(BlockEntityRendererContext)
+```mermaid
+flowchart TD
+    START["游戏启动 → 模型资源加载"]
+
+    subgraph BAKE["Bake 阶段: ModelBakePluginRegistry.bakeChain()"]
+        BAKE_TRIG["触发: block instanceof ModelBakeDecorator\n调用: ModelPluginRegistry.registerBakeChainBridge()\n      → ModelLoadingPlugin.modifyModelAfterBake 回调\n输入: block.getDefaultState()  ⚠️ 当前用默认状态"]
+
+        SUB["Plugin 1: SubModelComposerPlugin  (-1000)"]
+        SUB --> SUB_STATIC["静态: handler.handle(anchor, defaultState) → spec.addSubModel()"]
+        SUB --> SUB_DYN["动态: if DynamicModelDecorator → spec.registerDeferredSubModelHandler()"]
+
+        DT["Plugin 2: DynamicTexturePlugin  (-900)"]
+        DT --> DT_STATIC["静态: handler.handle(defaultState) → spec.applyTextureOverrides()"]
+        DT --> DT_DYN["动态: if DynamicModelDecorator → spec.registerDeferredTextureHandler()"]
+
+        ANIM["Plugin 3: AnimationControllerPlugin  (-500)"]
+        ANIM --> ANIM_DO["始终: spec.setAnimationHandler(handler)"]
+
+        EMV["Plugin 4: EmissivePlugin  (-400)"]
+        EMV --> EMV_STATIC["静态: spec.setEmissiveLevel(handler.handle(defaultState))"]
+        EMV --> EMV_DYN["动态: if DynamicModelDecorator → spec.registerDeferredEmissiveHandler()"]
+
+        MB["Plugin 5: MultiBlockCoordinatorPlugin  (100)"]
+        MB --> MB_DO["始终: spec.addConnectedPart(handler.handle(...))"]
+    end
+
+    subgraph AFTER["After-Bake 阶段: ModelPluginRegistry.registerAll()"]
+        AFTER_DESC["Fabric 回调: modifyModelAfterBake\n包装顺序: Offset(Rotation(Text/SubModel(Original)))"]
+
+        DEC["DECORATOR 层 (先注册 → 内层)"]
+        DEC --> DEC_SUB["SubModelBakedModel ← BakedModelSpec 含 subModels + deferred handlers"]
+        DEC --> DEC_TXT["TextBakedModel ← SignTextProvider"]
+
+        TRANS["TRANSFORMER 层 (后注册 → 外层)"]
+        TRANS --> TRANS_ROT["RotationBakedModel ← Rotatable / Directional"]
+        TRANS --> TRANS_OFF["OffsetBakedModel ← Offset"]
+    end
+
+    subgraph DECOPIPE["装饰器管线: UnifiedRenderPipelineRegistry.initialize()"]
+        DECOPIPE_DESC["注册: RotationDecorator, OffsetDecorator\nTextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer）\nBlockEntityRenderer 管线: OffsetDecorator → RotationDecorator → TextDecorator"]
+
+        BM_PIPE["BakedModel 管线（通过 DecoratorBakedModel 委托）"]
+        BM_PIPE --> BM_OFF["OffsetBakedModel → OffsetDecorator.decorate()"]
+        BM_PIPE --> BM_ROT["RotationBakedModel → RotationDecorator.decorate()"]
+
+        BER_PIPE["BlockEntityRenderer 管线（通过 TextBlockRenderer 委托）"]
+        BER_PIPE --> BER_DECO["TextDecorator.decorate(BlockEntityRendererContext)"]
+    end
+
+    START --> BAKE --> AFTER --> DECOPIPE
 ```
 
 ### 2.2 装饰器管线架构
 
-```
-装饰器接口 (pipeline/api/)
-├── UnifiedRenderDecorator<T, R>   — 统一装饰器接口 + Priority 枚举
-│   └── Priority: SUB_MODEL(-1000) → TEXT(-500) → ROTATION(0) → OFFSET(100)
-├── BakedModelDecorator<R>         — BakedModel 管线专用接口
-│   └── decorate(BakedModelContext, Function) → Void
-└── BlockEntityDecorator<R>        — BlockEntity 管线专用接口
-    └── decorate(BlockEntityRendererContext<?>, Function) → Void
+```mermaid
+flowchart TD
+    subgraph API["装饰器接口 (pipeline/api/)"]
+        URD["UnifiedRenderDecorator&lt;T, R&gt;\n统一接口 + Priority 枚举\nPriority: SUB_MODEL(-1000) → TEXT(-500) → ROTATION(0) → OFFSET(100)"]
+        BMD["BakedModelDecorator&lt;R&gt;\nBakedModel 管线专用接口\ndecorate(BakedModelContext, Function) → Void"]
+        BED["BlockEntityDecorator&lt;R&gt;\nBlockEntity 管线专用接口\ndecorate(BlockEntityRendererContext&lt;?&gt;, Function) → Void"]
+    end
 
-渲染上下文 (pipeline/context/)
-├── BakedModelContext              — 封装 emitBlockQuads 全部参数
-│   └── blockView, state, pos, randomSupplier, context
-└── BlockEntityRendererContext<T>  — 封装 BlockEntityRenderer 全部参数
-    └── entity, tickDelta, matrices, vertexConsumers, light, overlay
+    subgraph CTX["渲染上下文 (pipeline/context/)"]
+        BMC["BakedModelContext\n封装 emitBlockQuads 全部参数\nblockView, state, pos, randomSupplier, context"]
+        BEC["BlockEntityRendererContext&lt;T&gt;\n封装 BlockEntityRenderer 全部参数\nentity, tickDelta, matrices, vertexConsumers, light, overlay"]
+    end
 
-装饰器实现 (pipeline/decorator/)
-├── OffsetDecorator                — 偏移变换（同时实现两个接口）
-│   ├─ BakedModel: pushTransform(quad → quad.pos + offset)
-│   └─ BlockEntity: matrices.translate(offset)
-├── RotationDecorator              — 旋转变换（同时实现两个接口）
-│   ├─ BakedModel: pushTransform(quad → 绕 Y 轴旋转)
-│   └─ BlockEntity: matrices.multiply(Quaternionf.rotateY)
-├── TextDecorator                  — 文字渲染（同时实现两个接口）
-│   ├─ BakedModel: 当前仅代理（数据在 BlockEntity 中）
-│   └─ BlockEntity: TextRenderer.draw() 渲染文字顶点
-├── SubModelDecorator              — 子模型渲染（仅 BakedModel 管线）
-│   └─ 解析 SubModelEntry → 加载模型 → emitSubModelQuads()
-└── SubModelRendererBase           — 子模型渲染公共基类
-    └── modelCache, deferredCache, resolveSubModelEntries(), loadModelWithFallback()
+    subgraph IMPL["装饰器实现 (pipeline/decorator/)"]
+        OFF["OffsetDecorator 偏移变换（双接口）\nBakedModel: pushTransform(quad.pos + offset)\nBlockEntity: matrices.translate(offset)"]
+        ROT["RotationDecorator 旋转变换（双接口）\nBakedModel: pushTransform(quad 绕 Y 轴旋转)\nBlockEntity: matrices.multiply(Quaternionf.rotateY)"]
+        TXT["TextDecorator 文字渲染（双接口）\nBakedModel: 当前仅代理\nBlockEntity: TextRenderer.draw() 渲染文字"]
+        SUB_M["SubModelDecorator 子模型渲染（仅 BakedModel）\n解析 SubModelEntry → 加载模型 → emitSubModelQuads()"]
+        BASE["SubModelRendererBase 子模型公共基类\nmodelCache, deferredCache, resolveSubModelEntries()"]
+    end
 
-注册中心 (pipeline/)
-└── UnifiedRenderPipelineRegistry
-    ├── initialize() — 注册所有装饰器
-    ├── registerBakedModelDecorator() — 注册 BakedModel 装饰器
-    ├── registerBlockEntityDecorator() — 注册 BlockEntity 装饰器
-    ├── createBakedModelChain() — 创建 BakedModel 装饰器链
-    └── createBlockEntityChain() — 创建 BlockEntity 装饰器链
+    subgraph REG["注册中心 (pipeline/)"]
+        UPR["UnifiedRenderPipelineRegistry\ninitialize() 注册所有装饰器\ncreateBakedModelChain()\ncreateBlockEntityChain()"]
+    end
+
+    API --> CTX --> IMPL --> REG
 ```
 
 ### 2.3 静态 vs 动态分流
 
-```
-方块实现了 DynamicModelDecorator?
-  │
-  ├─ YES → 动态路径
-  │   插件存储 handler 引用到 BakedModelSpec.deferred* 字段
-  │   渲染时 SubModelBakedModel 调用 handler 按当前 BlockState 求值
-  │   性能开销: 渲染时每次都调用 handler Lambda
-  │
-  └─ NO  → 静态路径
-      插件立即调用 handler 并写入 BakedModelSpec 的最终字段
-      渲染时直接使用预计算值，零额外开销
-      陷阱: 使用的是 defaultState，所有状态的模型完全相同！
+```mermaid
+flowchart TD
+    CHK{"方块实现了\nDynamicModelDecorator?"}
+    CHK -->|YES| DYN["动态路径\n插件存储 handler 引用到 BakedModelSpec.deferred* 字段\n渲染时 SubModelBakedModel 调用 handler 按当前 BlockState 求值\n性能开销: 渲染时每次都调用 handler Lambda"]
+    CHK -->|NO| STA["静态路径\n插件立即调用 handler 并写入 BakedModelSpec 的最终字段\n渲染时直接使用预计算值，零额外开销\n⚠️ 陷阱: 使用的是 defaultState，所有状态的模型完全相同！"]
 ```
 
 ---
@@ -385,44 +363,53 @@ public class TestLightBulbBlock extends CustomBlock
 
 采用**装饰器设计模式**，将两条渲染管线统一到同一套装饰器链中：
 
-```
-装饰器接口层 (pipeline/api/)
-├── UnifiedRenderDecorator<T, R>   — 统一装饰器接口 + Priority 枚举
-├── BakedModelDecorator<R>         — BakedModel 管线专用接口
-└── BlockEntityDecorator<R>        — BlockEntity 管线专用接口
+```mermaid
+flowchart TD
+    subgraph API["装饰器接口层 (pipeline/api/)"]
+        A_UNI["UnifiedRenderDecorator&lt;T, R&gt;\n统一接口 + Priority 枚举"]
+        A_BM["BakedModelDecorator&lt;R&gt;\nBakedModel 管线专用接口"]
+        A_BE["BlockEntityDecorator&lt;R&gt;\nBlockEntity 管线专用接口"]
+    end
 
-渲染上下文层 (pipeline/context/)
-├── BakedModelContext              — 封装 emitBlockQuads 参数
-└── BlockEntityRendererContext<T>  — 封装 BlockEntityRenderer 参数
+    subgraph CTX["渲染上下文层 (pipeline/context/)"]
+        C_BM["BakedModelContext\n封装 emitBlockQuads 参数"]
+        C_BE["BlockEntityRendererContext&lt;T&gt;\n封装 BlockEntityRenderer 参数"]
+    end
 
-装饰器实现层 (pipeline/decorator/)
-├── OffsetDecorator                — 偏移变换（同时实现两个接口）
-├── RotationDecorator              — 旋转变换（同时实现两个接口）
-├── TextDecorator                  — 文字渲染（由 TextBlockRenderer 创建，持有 TextRenderer）
-├── SubModelDecorator              — 子模型渲染（仅 BakedModel 管线）
-└── SubModelRendererBase           — 子模型渲染公共基类
+    subgraph IMPL["装饰器实现层 (pipeline/decorator/)"]
+        I_OFF["OffsetDecorator\n偏移变换（双接口）"]
+        I_ROT["RotationDecorator\n旋转变换（双接口）"]
+        I_TXT["TextDecorator\n文字渲染（由 TextBlockRenderer 创建，持有 TextRenderer）"]
+        I_SUB["SubModelDecorator\n子模型渲染（仅 BakedModel 管线）"]
+        I_BASE["SubModelRendererBase\n子模型渲染公共基类"]
+    end
 
-注册中心 (pipeline/)
-└── UnifiedRenderPipelineRegistry  — 装饰器注册、链式组装、自动分发
+    subgraph REG["注册中心 (pipeline/)"]
+        R_REG["UnifiedRenderPipelineRegistry\n装饰器注册、链式组装、自动分发"]
+    end
+
+    API --> CTX --> IMPL --> REG
 ```
 
 ### 7.3 装饰器链结构
 
 **BakedModel 管线**（模型烘焙后处理）：
-```
-OffsetDecorator (Priority.OFFSET = 100)
-  └─ RotationDecorator (Priority.ROTATION = 0)
-     └─ TextDecorator (Priority.TEXT = -500)
-        └─ SubModelDecorator (Priority.SUB_MODEL = -1000)
-           └─ 原始模型
+
+```mermaid
+flowchart LR
+    A["OffsetDecorator\nPriority.OFFSET = 100"] --> B["RotationDecorator\nPriority.ROTATION = 0"]
+    B --> C["TextDecorator\nPriority.TEXT = -500"]
+    C --> D["SubModelDecorator\nPriority.SUB_MODEL = -1000"]
+    D --> E["原始模型"]
 ```
 
 **BlockEntityRenderer 管线**（每帧渲染）：
-```
-OffsetDecorator (Priority.OFFSET = 100)
-  └─ RotationDecorator (Priority.ROTATION = 0)
-     └─ TextDecorator (Priority.TEXT = -500)
-        └─ 原始渲染器
+
+```mermaid
+flowchart LR
+    A2["OffsetDecorator\nPriority.OFFSET = 100"] --> B2["RotationDecorator\nPriority.ROTATION = 0"]
+    B2 --> C2["TextDecorator\nPriority.TEXT = -500"]
+    C2 --> D2["原始渲染器"]
 ```
 
 **优先级规则**：数值越小越先执行（越靠近内层）。
@@ -476,6 +463,7 @@ public class OffsetBakedModel extends DecoratorBakedModel<OffsetDecorator> {
 | **共享装饰器实例** | Offset/Rotation 装饰器在两条管线间共享，保证变换逻辑完全一致 |
 | **BlockEntityDecorator.getPriorityValue() 声明为抽象** | 避免与 BakedModelDecorator 的默认方法继承冲突，由实现类显式委托 |
 | **DecoratorBakedModel 泛型约束** | `D extends BakedModelDecorator<Void>`，确保类型安全 |
+| **渲染器注册机制（2026-10 修复）** | 原 `Renderers.Registry` 枚举 + 类字面量模式因 JLS §12.4.1（类字面量不触发初始化）导致工厂从未注册，已改为 `Renderers.initRenderers()` 直接调用 `BlockEntityRendererRegistry.register()` |
 
 ---
 

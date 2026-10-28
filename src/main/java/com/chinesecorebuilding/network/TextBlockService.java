@@ -2,6 +2,7 @@ package com.chinesecorebuilding.network;
 
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.world.World;
 
 /**
@@ -47,7 +48,18 @@ public final class TextBlockService {
                 TextBlockPayload.ID,
                 (server, player, handler, buf, responseSender) -> {
                     TextBlockPayload.Decoded data = TextBlockPayload.decode(buf);
-                    server.execute(() -> saveLines(player.getWorld(), data.pos(), data.lines()));
+                    server.execute(() -> {
+                        saveLines(player.getWorld(), data.pos(), data.lines());
+                        // 立即同步 BlockEntity NBT 到编辑者客户端，
+                        // 确保编辑者能收到服务端确认的完整数据
+                        World world = player.getWorld();
+                        if (world.getBlockEntity(data.pos()) instanceof TextBlockEntity entity) {
+                            Packet<?> packet = entity.toUpdatePacket();
+                            if (packet != null) {
+                                player.networkHandler.sendPacket(packet);
+                            }
+                        }
+                    });
                 }
         );
     }

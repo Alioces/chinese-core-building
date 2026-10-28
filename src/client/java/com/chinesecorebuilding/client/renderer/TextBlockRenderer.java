@@ -2,7 +2,6 @@ package com.chinesecorebuilding.client.renderer;
 
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
-import com.chinesecorebuilding.client.renderer.pipeline.BlockEntityRendererRegistry;
 import com.chinesecorebuilding.client.renderer.pipeline.UnifiedRenderPipelineRegistry;
 import com.chinesecorebuilding.client.renderer.pipeline.context.BlockEntityRendererContext;
 import net.minecraft.block.Block;
@@ -36,29 +35,26 @@ import java.util.function.Function;
 public class TextBlockRenderer<T extends TextBlockEntity> implements BlockEntityRenderer<T> {
 
     /**
-     * 向注册中心提交文字渲染器工厂。
-     * <p>
-     * 静态块在类加载时执行，将 "text" 标识与 TextBlockRenderer 工厂绑定。
-     * 方块实现 SignTextProvider 接口即自动获得此渲染器。
-     * </p>
-     */
-    static {
-        BlockEntityRendererRegistry.register("text", TextBlockRenderer::new);
-    }
-
-    /**
      * 文字装饰器实例（通过构造函数初始化，避免 MinecraftClient.getInstance() 返回 null）。
      */
     private final com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator textDecorator;
 
     /**
      * 构造函数。
+     * <p>
+     * 文字渲染器采用完全延迟初始化策略，
+     * 传入 null 以在首次渲染时从 {@code MinecraftClient.getInstance().textRenderer} 获取。
+     * 避免 BlockEntityRendererFactory.Context.getTextRenderer() 在特定环境下返回 null 导致文字静默丢失。
+     * </p>
      *
-     * @param ctx BlockEntityRenderer 工厂上下文（提供 textRenderer）
+     * @param ctx BlockEntityRenderer 工厂上下文
      */
     public TextBlockRenderer(BlockEntityRendererFactory.Context ctx) {
         this.textDecorator = new com.chinesecorebuilding.client.renderer.pipeline.decorator.TextDecorator(
-                ctx.getTextRenderer()
+                null
+        );
+        this.textDecorator.setRendererFactory(
+                () -> net.minecraft.client.MinecraftClient.getInstance().textRenderer
         );
     }
 

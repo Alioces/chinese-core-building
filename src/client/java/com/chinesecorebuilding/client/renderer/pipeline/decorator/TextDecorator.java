@@ -41,16 +41,42 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
 
     /**
      * Minecraft 字体渲染器。
+     * <p>
+     * 可以为 null（表示尚未初始化），
+     * 此时会通过 {@link #rendererFactory} 延迟获取。
+     * </p>
      */
-    private final TextRenderer textRenderer;
+    private TextRenderer textRenderer;
+
+    /**
+     * 字体渲染器延迟工厂。
+     * <p>
+     * 当 {@link #textRenderer} 为 null 时通过此工厂获取实例。
+     * 调用方可注入自定义工厂（例如在构造函数中 MinecraftClient 尚未就绪时）。
+     * </p>
+     */
+    private java.util.function.Supplier<TextRenderer> rendererFactory;
 
     /**
      * 构造函数。
      *
-     * @param textRenderer Minecraft 字体渲染器
+     * @param textRenderer Minecraft 字体渲染器（可以为 null）
      */
     public TextDecorator(TextRenderer textRenderer) {
         this.textRenderer = textRenderer;
+    }
+
+    /**
+     * 设置字体渲染器的延迟工厂。
+     * <p>
+     * 当构造函数中无法获取有效的 TextRenderer 时，
+     * 调用方可通过此方法注入工厂，首次渲染时自动调用获取。
+     * </p>
+     *
+     * @param factory TextRenderer 供应工厂
+     */
+    public void setRendererFactory(java.util.function.Supplier<TextRenderer> factory) {
+        this.rendererFactory = factory;
     }
 
     @Override
@@ -69,14 +95,29 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
     }
 
     /**
-     * 延迟初始化 textRenderer，避免 MinecraftClient 未就绪时返回 null。
+     * 获取字体渲染器，支持延迟初始化。
+     * <p>
+     * 查找顺序：
+     * <ol>
+     *   <li>{@link #textRenderer} 字段（构造时传入或首次获取后缓存）</li>
+     *   <li>{@link #rendererFactory} 延迟工厂（调用方注入）</li>
+     *   <li>{@code MinecraftClient.getInstance().textRenderer}（最终兜底）</li>
+     * </ol>
+     * </p>
      *
-     * @return TextRenderer 实例
+     * @return TextRenderer 实例，或 null（所有兜底方案均失败时）
      */
     private TextRenderer getTextRenderer() {
-        if (textRenderer == null) {
-            return net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        if (textRenderer != null) {
+            return textRenderer;
         }
+        if (rendererFactory != null) {
+            textRenderer = rendererFactory.get();
+            if (textRenderer != null) {
+                return textRenderer;
+            }
+        }
+        textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
         return textRenderer;
     }
 
@@ -135,6 +176,10 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
      */
     private void renderSingleLine(TextLine line, BlockEntityRendererContext<?> context) {
         TextRenderer renderer = getTextRenderer();
+        if (renderer == null) {
+            return;
+        }
+
         Vec3d pos = line.position() != null ? line.position() : TextLine.DEFAULT_POSITION;
 
         context.matrices().push();
@@ -166,7 +211,7 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
             renderer.draw(
                     line.text(), 0, 0, color, true,
                     context.matrices().peek().getPositionMatrix(), context.vertexConsumers(),
-                    TextRenderer.TextLayerType.SEE_THROUGH,
+                    TextRenderer.TextLayerType.NORMAL,
                     0, effectiveLight
             );
         }
