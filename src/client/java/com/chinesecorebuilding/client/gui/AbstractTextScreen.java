@@ -160,7 +160,7 @@ public abstract class AbstractTextScreen extends Screen {
         try {
             color = Integer.parseInt(colorField.getText().trim(), 16) | 0xFF000000;
         } catch (NumberFormatException e) {
-            color = 0xFFFFFFFF;
+            color = 0xFF808080;
         }
         builder.color(color);
         builder.scale(parseFloatSafe(scaleField.getText(), 1.0f));

@@ -1,13 +1,7 @@
 package com.chinesecorebuilding.client;
 
-import com.chinesecorebuilding.block.SimpleTextSignBlock;
-import com.chinesecorebuilding.block.SingleLineSignBlock;
-import com.chinesecorebuilding.block.TestSignBlock;
 import com.chinesecorebuilding.block.properties.GuiInteractive;
-import com.chinesecorebuilding.block.properties.model.Layered;
-import com.chinesecorebuilding.block.properties.model.Offset;
-import com.chinesecorebuilding.block.properties.model.Rotatable;
-import com.chinesecorebuilding.block.properties.model.SignTextProvider;
+import com.chinesecorebuilding.block.properties.model.*;
 import com.chinesecorebuilding.client.gui.GuiScreenRegistry;
 import com.chinesecorebuilding.client.gui.SimpleTextScreen;
 import com.chinesecorebuilding.client.gui.TextBlockScreen;
@@ -18,12 +12,15 @@ import com.chinesecorebuilding.client.model.ModelPluginRegistry.Phase;
 import com.chinesecorebuilding.client.model.postProcessing.OffsetBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.RotationBakedModel;
 import com.chinesecorebuilding.client.model.postProcessing.TextBakedModel;
+import com.chinesecorebuilding.client.renderer.pipeline.BlockEntityRendererRegistry;
+import com.chinesecorebuilding.client.renderer.Renderers;
 import com.chinesecorebuilding.client.renderer.TextBlockRenderer;
 import com.chinesecorebuilding.client.renderer.pipeline.UnifiedRenderPipelineRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.RenderLayer;
@@ -70,6 +67,8 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
      */
     @Override
     public void onInitializeClient() {
+        // 0. 初始化渲染器注册中心
+        Renderers.initRenderers();
         // 0. 初始化统一渲染管线装饰器注册中心
         UnifiedRenderPipelineRegistry.initialize();
 
@@ -205,15 +204,16 @@ public class ChineseCoreBuildingClient implements ClientModInitializer {
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void registerBlockEntityRenderers() {
-        var factories = com.chinesecorebuilding.client.renderer.BlockEntityRendererRegistry.getFactories();
+
+        var factories = BlockEntityRendererRegistry.getFactories();
 
         for (Block block : Registries.BLOCK) {
-            if (block instanceof com.chinesecorebuilding.block.properties.model.ModelBakeDecorator decorator) {
+            if (block instanceof ModelBakeDecorator decorator) {
                 String typeId = decorator.getRendererTypeId();
                 if (typeId != null && factories.containsKey(typeId)) {
                     BlockEntityRendererFactories.register(
-                        (net.minecraft.block.entity.BlockEntityType) decorator.getBlockEntityType(),
-                        (net.minecraft.client.render.block.entity.BlockEntityRendererFactory) factories.get(typeId)
+                            (BlockEntityType) decorator.getBlockEntityType(),
+                            factories.get(typeId)
                     );
                 }
             }

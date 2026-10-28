@@ -9,8 +9,6 @@ import net.minecraft.block.Block;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,9 +45,6 @@ public final class ModelPluginRegistry {
 
     /** 变换阶段插件列表。 */
     private static final List<Entry> TRANSFORMERS = new ArrayList<>();
-
-    /** 日志记录器，用于诊断模型包装链。 */
-    private static final Logger LOGGER = LoggerFactory.getLogger("ModelPluginRegistry");
 
     /**
      * 注册一个模型插件。
@@ -108,15 +103,9 @@ public final class ModelPluginRegistry {
 
                 if (hasSubModels) {
                     if (isDynamic) {
-                        // 动态路径：传入完整 spec，渲染时根据实际 BlockState 动态计算
                         result = new SubModelBakedModel(result, spec);
-                        LOGGER.info("[bakeChainBridge] model={}, dynamic=true, deferredHandler={}",
-                                context.id(), spec.getDeferredSubModelHandler() != null);
                     } else {
-                        // 静态路径：仅传入预计算列表，零运行时开销
                         result = new SubModelBakedModel(result, spec.getSubModels());
-                        LOGGER.info("[bakeChainBridge] model={}, static=true, subModels={}",
-                                context.id(), spec.getSubModels().size());
                     }
                 }
 
@@ -127,18 +116,15 @@ public final class ModelPluginRegistry {
 
     /**
      * 将单个插件包装为 Fabric ModelLoadingPlugin。
+     *
+     * @param entry 插件条目（包含匹配器和包装函数）
      */
     private static void registerPlugin(Entry entry) {
         ModelLoadingPlugin.register(pluginContext -> {
             pluginContext.modifyModelAfterBake().register((original, context) -> {
                 Block block = resolveBlock(context.id());
                 if (block != null && entry.matcher().test(block)) {
-                    BakedModel wrapped = entry.wrapper().apply(original);
-                    LOGGER.info("[registerPlugin] model={}, wrapped={}({})",
-                            context.id(),
-                            wrapped.getClass().getSimpleName(),
-                            original.getClass().getSimpleName());
-                    return wrapped;
+                    return entry.wrapper().apply(original);
                 }
                 return original;
             });
@@ -147,7 +133,12 @@ public final class ModelPluginRegistry {
 
     /**
      * 从模型 ID 解析方块实例。
-     * 模型 ID 格式：namespace:block/block_name 或 namespace:item/item_name。
+     * <p>
+     * 模型 ID 格式：{@code namespace:block/block_name} 或 {@code namespace:item/item_name}。
+     * </p>
+     *
+     * @param modelId 模型标识符
+     * @return 对应的方块实例，或 null（解析失败时）
      */
     static Block resolveBlock(Identifier modelId) {
         if (!modelId.getPath().startsWith("block/")) return null;

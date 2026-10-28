@@ -68,7 +68,12 @@ public final class ModelBakePluginRegistry {
 
     /**
      * 从模型 ID 解析方块实例。
-     * 模型 ID 格式：namespace:block/block_name 或 namespace:item/item_name。
+     * <p>
+     * 模型 ID 格式：{@code namespace:block/block_name} 或 {@code namespace:item/item_name}。
+     * </p>
+     *
+     * @param modelId 模型标识符
+     * @return 对应的方块实例，或 null（解析失败时）
      */
     private static Block resolveBlock(Identifier modelId) {
         return ModelPluginRegistry.resolveBlock(modelId);

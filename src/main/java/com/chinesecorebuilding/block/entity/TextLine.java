@@ -44,12 +44,13 @@ public record TextLine(
 ) {
 
     /**
-     * 默认颜色：黑色（0x000000）。
+     * 默认颜色：灰色（0xFF808080）。
      * <p>
      * 当颜色字段缺失或解析失败时使用此默认值。
+     * 灰色在深色和浅色方块表面上均可见。
      * </p>
      */
-    public static final int DEFAULT_COLOR = 0;
+    public static final int DEFAULT_COLOR = 0xFF808080;
 
     /**
      * 默认缩放：1.0（不缩放）。

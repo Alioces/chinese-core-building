@@ -2,6 +2,7 @@ package com.chinesecorebuilding.client.renderer;
 
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.entity.TextLine;
+import com.chinesecorebuilding.client.renderer.pipeline.BlockEntityRendererRegistry;
 import com.chinesecorebuilding.client.renderer.pipeline.UnifiedRenderPipelineRegistry;
 import com.chinesecorebuilding.client.renderer.pipeline.context.BlockEntityRendererContext;
 import net.minecraft.block.Block;

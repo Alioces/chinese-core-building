@@ -1,7 +1,5 @@
-package com.chinesecorebuilding.client.renderer;
+package com.chinesecorebuilding.client.renderer.pipeline;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 
 import java.util.HashMap;

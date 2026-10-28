@@ -68,10 +68,10 @@ public interface BlockEntityDecorator<R> {
     /**
      * 获取优先级数值（用于排序）。
      * <p>
-     * 注意：此方法声明为抽象方法，由实现类委托给 BakedModelDecorator 的默认实现。
+     * 由实现类通过 {@link UnifiedRenderDecorator.Priority#value} 返回数值。
      * </p>
      *
-     * @return 优先级数值
+     * @return 优先级数值（数值越小越靠近内层）
      */
     int getPriorityValue();
 }

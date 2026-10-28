@@ -191,8 +191,8 @@ public class ChineseCoreBuildingBlocks {
     public static final Block this_area = register("this_area", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque(), 2.0f));
     /** 限制质量标志 */
     public static final Block weight_limit = register("weight_limit", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
-    /** 限制宽度标志 */
-    public static final Block width_limit = register("width_limit", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    /** 限制宽度标志（支持单行文字编辑） */
+    public static final Block width_limit = register("width_limit", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 减速让行标志 */
     public static final Block yield = register("yield", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 

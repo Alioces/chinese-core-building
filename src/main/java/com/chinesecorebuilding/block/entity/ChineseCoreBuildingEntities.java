@@ -38,7 +38,8 @@ public final class ChineseCoreBuildingEntities {
                         TextBlockEntity::new,
                         ChineseCoreBuildingBlocks.test_sign,
                         ChineseCoreBuildingBlocks.simple_text_sign,
-                        ChineseCoreBuildingBlocks.single_line_sign
+                        ChineseCoreBuildingBlocks.single_line_sign,
+                        ChineseCoreBuildingBlocks.width_limit
                 ).build()
         );
     }
