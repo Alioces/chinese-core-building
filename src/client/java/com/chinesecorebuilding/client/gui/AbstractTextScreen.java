@@ -8,6 +8,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -144,17 +145,28 @@ public abstract class AbstractTextScreen extends Screen {
 
     /**
      * 将编辑区当前内容写回 editingLines 中指定索引的 TextLine。
+     * <p>
+     * 位置字段的取值采用两级兜底策略：当输入框内容无法解析为数字（如被清空）时，
+     * 优先沿用该行<b>原有位置</b>的对应分量；若原有位置也为 null，
+     * 才回退到 {@link TextLine#DEFAULT_POSITION}。
+     * </p>
+     * <p>
+     * 这样可以避免用户误删输入框内容时，文字位置被意外重置为某个硬编码坐标，
+     * 保证"清空输入框"只会让该分量保持原值而不会产生跳变。
+     * </p>
      *
      * @param index 文字行索引
      */
     protected void saveEditToIndex(int index) {
         if (index < 0 || index >= editingLines.size()) return;
+        TextLine current = editingLines.get(index);
+        Vec3d basePosition = current.position() != null ? current.position() : TextLine.DEFAULT_POSITION;
         TextLine.Builder builder = TextLine.builder();
         builder.text(Text.literal(textField.getText()));
         builder.position(
-                parseFloatSafe(posXField.getText(), 0.5f),
-                parseFloatSafe(posYField.getText(), 0.5f),
-                parseFloatSafe(posZField.getText(), 0.5f)
+                parseFloatSafe(posXField.getText(), (float) basePosition.x),
+                parseFloatSafe(posYField.getText(), (float) basePosition.y),
+                parseFloatSafe(posZField.getText(), (float) basePosition.z)
         );
         int color;
         try {
@@ -164,7 +176,7 @@ public abstract class AbstractTextScreen extends Screen {
         }
         builder.color(color);
         builder.scale(parseFloatSafe(scaleField.getText(), 1.0f));
-        builder.glowing(editingLines.get(index).glowing());
+        builder.glowing(current.glowing());
         editingLines.set(index, builder.build());
     }
 

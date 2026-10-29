@@ -93,14 +93,20 @@ public abstract class BaseSingleLineTextScreen extends AbstractTextScreen {
     /** 缩放输入框最大长度。 */
     protected static final int SCALE_MAX_LENGTH = 6;
 
-    /** 默认文字位置。 */
-    protected static final double DEFAULT_POS_X = 0.5;
+    /**
+     * 默认文字位置 X 分量。
+     * <p>
+     * 直接引用 {@link TextLine#DEFAULT_POSITION}，避免与数据层重复定义默认值。
+     * 默认位置是"单一数据源"：GUI 兜底、Builder 默认值、NBT 兜底都应以它为准。
+     * </p>
+     */
+    protected static final double DEFAULT_POS_X = TextLine.DEFAULT_POSITION.x;
 
-    /** 默认文字位置。 */
-    protected static final double DEFAULT_POS_Y = 0.6;
+    /** 默认文字位置 Y 分量，引用 {@link TextLine#DEFAULT_POSITION}。 */
+    protected static final double DEFAULT_POS_Y = TextLine.DEFAULT_POSITION.y;
 
-    /** 默认文字位置。 */
-    protected static final double DEFAULT_POS_Z = 1.01;
+    /** 默认文字位置 Z 分量，引用 {@link TextLine#DEFAULT_POSITION}。 */
+    protected static final double DEFAULT_POS_Z = TextLine.DEFAULT_POSITION.z;
 
     /** 默认文字颜色。 */
     protected static final int DEFAULT_COLOR = 0x000000;

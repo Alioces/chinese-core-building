@@ -315,9 +315,27 @@ public class TextBlockScreen extends AbstractTextScreen {
         colorField.setMaxLength(POS_MAX_LENGTH);
         scaleField.setMaxLength(SCALE_MAX_LENGTH);
 
-        if (!editingLines.isEmpty()) {
-            selectedIndex = 0;
-            refreshEditFields(selectedIndex);
+        ensureDefaultLine();
+
+        selectedIndex = 0;
+        refreshEditFields(selectedIndex);
+    }
+
+    /**
+     * 确保列表中至少存在一行可编辑文字，否则自动补一行默认值。
+     * <p>
+     * 多行编辑器允许方块首次放置时 BlockEntity 中没有任何文字行（如 {@code test_sign}
+     * 的 {@code createBlockEntity} 不播种初始行）。若不补默认行，玩家首次打开 GUI
+     * 会看到空列表与空白输入框，必须手动点击"+ 添加"才能开始编辑，体验割裂。
+     * </p>
+     * <p>
+     * 与 {@code BaseSingleLineTextScreen.loadLines} 的保底行为保持一致：
+     * 位置取 {@link TextLine#DEFAULT_POSITION}，颜色、缩放、发光取 Builder 默认值。
+     * </p>
+     */
+    private void ensureDefaultLine() {
+        if (editingLines.isEmpty()) {
+            editingLines.add(TextLine.builder().text(Text.literal("")).build());
         }
     }
 
