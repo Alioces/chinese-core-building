@@ -39,7 +39,11 @@ public final class ChineseCoreBuildingEntities {
                         ChineseCoreBuildingBlocks.test_sign,
                         ChineseCoreBuildingBlocks.simple_text_sign,
                         ChineseCoreBuildingBlocks.single_line_sign,
-                        ChineseCoreBuildingBlocks.width_limit
+                        ChineseCoreBuildingBlocks.width_limit,
+                        ChineseCoreBuildingBlocks.weight_limit,
+                        ChineseCoreBuildingBlocks.height_limit,
+                        ChineseCoreBuildingBlocks.axle_weight_limit,
+                        ChineseCoreBuildingBlocks.km_h_and_no_entry
                 ).build()
         );
     }

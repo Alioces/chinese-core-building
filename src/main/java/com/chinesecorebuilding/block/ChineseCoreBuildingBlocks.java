@@ -133,8 +133,8 @@ public class ChineseCoreBuildingBlocks {
     public static final Block watch_for_wild_animals = register("watch_for_wild_animals", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
 
     // ------ 禁令标志（Prohibition Signs） ------
-    /** 限制轴重标志 */
-    public static final Block axle_weight_limit = register("axle_weight_limit", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    /** 限制轴重标志（支持单行文字编辑） */
+    public static final Block axle_weight_limit = register("axle_weight_limit", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 禁止驶入标志 */
     public static final Block do_not_enter = register("do_not_enter", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 解除限速标志 */
@@ -143,10 +143,10 @@ public class ChineseCoreBuildingBlocks {
     public static final Block end_of_no_overtaking = register("end_of_no_overtaking", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 会车让行标志 */
     public static final Block give_way_to_oncoming_vehicles = register("give_way_to_oncoming_vehicles", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
-    /** 限制高度标志 */
-    public static final Block height_limit = register("height_limit", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
-    /** 限速且禁止驶入标志 */
-    public static final Block km_h_and_no_entry = register("km_h_and_no_entry", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    /** 限制高度标志（支持单行文字编辑） */
+    public static final Block height_limit = register("height_limit", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    /** 限速且禁止驶入标志（支持单行文字编辑） */
+    public static final Block km_h_and_no_entry = register("km_h_and_no_entry", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 仅限机动车标志 */
     public static final Block motor_vehicles_only = register("motor_vehicles_only", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 禁止鸣笛标志 */
@@ -189,8 +189,8 @@ public class ChineseCoreBuildingBlocks {
     public static final Block stop_for_inspection = register("stop_for_inspection", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 区域限制标志（自定义偏移量） */
     public static final Block this_area = register("this_area", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque(), 2.0f));
-    /** 限制质量标志 */
-    public static final Block weight_limit = register("weight_limit", new RoadSignsBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
+    /** 限制质量标志（支持单行文字编辑） */
+    public static final Block weight_limit = register("weight_limit", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 限制宽度标志（支持单行文字编辑） */
     public static final Block width_limit = register("width_limit", new SingleLineRoadSignBlock(FabricBlockSettings.create().strength(4.0f).nonOpaque()));
     /** 减速让行标志 */

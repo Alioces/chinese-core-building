@@ -209,8 +209,11 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
                     effectiveLight
             );
         } else {
+            // shadow 参数传 false：关闭文字投影，使字形边缘保持纯净。
+            // 路标文字是贴在板面上的"印刷字"，投影会在浅色板面上形成深色描边，
+            // 既降低可读性又与真实路牌观感不符；关闭后字形直接以 line.color 填充。
             renderer.draw(
-                    line.text(), 0, 0, color, true,
+                    line.text(), 0, 0, color, false,
                     context.matrices().peek().getPositionMatrix(), context.vertexConsumers(),
                     TextRenderer.TextLayerType.NORMAL,
                     0, effectiveLight

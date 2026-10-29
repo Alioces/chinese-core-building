@@ -166,16 +166,20 @@ public class SingleLineRoadSignBlock extends RoadSignsBlock
     /**
      * 返回此方块对应的 GUI 类型标识符。
      * <p>
-     * 路标牌的文字位置由方块自身固定（见 {@link #createBlockEntity}），
-     * 玩家无需也不应手动调整，因此使用 {@link GuiInteractive#GUI_TYPE_SIMPLE}：
-     * 客户端据此创建 {@link com.chinesecorebuilding.client.gui.SimpleTextScreen}，
-     * 只保留文字内容、颜色、缩放、发光四项编辑能力，隐藏 XYZ 位置输入框。
+     * 使用 {@link GuiInteractive#GUI_TYPE_SINGLE_LINE}：客户端据此创建
+     * {@link com.chinesecorebuilding.client.gui.SingleLineScreen}，
+     * 在保留文字内容、颜色、缩放、发光四项编辑能力的同时，
+     * 额外提供 XYZ 位置输入框，允许玩家微调文字在方块局部坐标系中的位置。
+     * </p>
+     * <p>
+     * 初始位置仍由 {@link #createBlockEntity} 播种为 (0.5, 0.6, 0.9)，
+     * 玩家若不做修改，GUI 会原样沿用该值并写回存档。
      * </p>
      *
-     * @return {@link GuiInteractive#GUI_TYPE_SIMPLE}
+     * @return {@link GuiInteractive#GUI_TYPE_SINGLE_LINE}
      */
     @Override
     public String getGuiType() {
-        return GUI_TYPE_SIMPLE;
+        return GUI_TYPE_SINGLE_LINE;
     }
 }
