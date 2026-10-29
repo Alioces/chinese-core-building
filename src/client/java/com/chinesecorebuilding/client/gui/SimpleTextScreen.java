@@ -81,8 +81,13 @@ public class SimpleTextScreen extends BaseSingleLineTextScreen {
     /**
      * 将编辑区当前内容写回 editingLines 中指定索引的 TextLine。
      * <p>
-     * 简化版使用 {@link #getDefaultPosition()} 作为位置，
-     * 不从输入框读取位置数据。
+     * 简化版没有位置输入框，位置取值遵循"保留优先"策略：
+     * 优先沿用该行<b>已有的位置</b>，仅当原有位置为 null 时才回退到
+     * {@link #getDefaultPosition()}。
+     * </p>
+     * <p>
+     * 这样可避免覆盖方块在 {@code createBlockEntity} 阶段播种的默认位置
+     * （如路标牌自定义的 (0.5, 0.6, 0.9)），保证不同方块的专属位置不被 GUI 抹平。
      * </p>
      *
      * @param index 文字行索引
@@ -90,9 +95,11 @@ public class SimpleTextScreen extends BaseSingleLineTextScreen {
     @Override
     protected void saveEditToIndex(int index) {
         if (index < 0 || index >= editingLines.size()) return;
+        TextLine current = editingLines.get(index);
+        Vec3d position = current.position() != null ? current.position() : getDefaultPosition();
         TextLine.Builder builder = TextLine.builder();
         builder.text(Text.literal(textField.getText()));
-        builder.position(getDefaultPosition());
+        builder.position(position);
         int color;
         try {
             color = Integer.parseInt(colorField.getText().trim(), 16) | 0xFF000000;
@@ -101,7 +108,7 @@ public class SimpleTextScreen extends BaseSingleLineTextScreen {
         }
         builder.color(color);
         builder.scale(parseFloatSafe(scaleField.getText(), DEFAULT_SCALE));
-        builder.glowing(editingLines.get(index).glowing());
+        builder.glowing(current.glowing());
         editingLines.set(index, builder.build());
     }
 
