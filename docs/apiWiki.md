@@ -313,6 +313,17 @@ flowchart TD
     URP -->|Offset→Rotation→Text| RENDER[每帧渲染]
 ```
 
+**文字绘制细节（TextDecorator）**：
+
+| 项目 | 当前取值 | 说明 |
+|------|----------|------|
+| `shadow` 参数 | `false` | 关闭文字投影。路标文字是贴在板面上的"印刷字"，投影会在浅色板面上形成深色描边，既降低可读性又不符合真实路牌观感 |
+| `TextLayerType` | `NORMAL` | 常规文字层，参与深度测试 |
+| 发光分支 | `drawWithOutline` | 该方法无 shadow 参数，绘制的是四周描边色 + 中心填充色，用于保证任意背景下的可辨认性；同时强制亮度 `0xFFFF` 实现自发光 |
+| 朝向修正 | `rotateY(PI)` | 修正 TextRenderer 默认朝向（-Z 面向方块内部），使文字面向外部玩家 |
+
+> **注意**：关闭阴影后，若文字颜色与板面颜色对比度不足（例如白字白板）会难以辨认。当前默认色为黑色 `0x000000`，对比充足。
+
 ---
 
 ### 3.6 Interactive（方块交互能力）
@@ -367,8 +378,8 @@ flowchart TD
 | 常量 | 值 | 对应 Screen | 说明 |
 |------|------|------------|------|
 | `GUI_TYPE_MULTI_LINE` | `"multi_line"` | `TextBlockScreen` | 多行文字编辑器 |
-| `GUI_TYPE_SINGLE_LINE` | `"single_line"` | `SingleLineScreen` | 单行编辑器（含 XYZ） |
-| `GUI_TYPE_SIMPLE` | `"simple"` | `SimpleTextScreen` | 简化编辑器（无 XYZ） |
+| `GUI_TYPE_SINGLE_LINE` | `"single_line"` | `SingleLineScreen` | 单行编辑器（含 XYZ 位置框）。`SingleLineRoadSignBlock` 使用此类型，允许玩家微调文字位置 |
+| `GUI_TYPE_SIMPLE` | `"simple"` | `SimpleTextScreen` | 简化编辑器（无 XYZ 位置框），位置由方块自行播种 |
 
 **客户端处理流程**：
 
@@ -519,6 +530,22 @@ flowchart TD
 
 > **关键一致性保证**：TextBlockRenderer 通过 `UnifiedRenderPipelineRegistry.createBlockEntityChain()` 获取完整装饰器链（Offset→Rotation→Text），与 BakedModel 管线使用相同的变换逻辑，保证方块模型和文字层严格对齐。
 
+#### 两条管线的包装方向差异（重要）
+
+两条管线的装饰器**排序规则相同**（按优先级升序，数值小的靠近内层），但**链的包装方向相反**：
+
+| 管线 | 链构建方法 | 包装方向 | 依据 |
+|------|-----------|----------|------|
+| BakedModel（模型本体） | `BakedModelDecorator.createChain` | **降序**包装 | Fabric 的 `RenderContext.pushTransform` 是"后 push 先应用" |
+| BlockEntityRenderer（文字层） | `BlockEntityDecorator.createChain` | **升序**包装 | `MatrixStack` 右乘，矩阵顺序直接对应顶点变换顺序 |
+
+**为何必须相反**：两种机制应用变换的先后与"push 顺序"的对应关系正好颠倒。
+
+- BakedModel 管线：`pushTransform` 后进先出，降序包装才能让 `Offset` 最后 push、最先应用 → 得到 `Offset(Rotation(v))`
+- BER 管线：`MatrixStack` 右乘，升序包装（先遍历低优先级）使 `Offset` 处于外层 → 得到 `T(offset) * R(angle)`
+
+两条管线虽包装方向不同，**最终数学顺序完全一致**：先旋转模型/文字，再沿世界方向平移偏移量。若 BER 管线误用降序包装，偏移向量会被旋转扭曲（例如 EAST 朝向的 1.5 方块偏移会被转到北侧），导致文字与模型分离。
+
 ---
 
 ## 6. 数据流与网络通信
@@ -553,7 +580,7 @@ sequenceDiagram
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `text` | `Text` | 文字内容（支持 JSON 富文本） |
-| `position` | `Vec3d` | 方块空间相对偏移（默认 0.5, 0.6, 1.01 = +Z 面中心） |
+| `position` | `Vec3d` | 方块空间相对偏移（`TextLine.DEFAULT_POSITION` = 0.5, 0.6, 1.01 = +Z 面外侧，避免 Z-fighting）。注意：方块可通过 `createBlockEntity` 播种自己的初始位置，例如 `SingleLineRoadSignBlock` 播种 (0.5, 0.6, 0.9) 以贴合路标板面 |
 | `color` | `int` | 文字颜色 0xAARRGGBB |
 | `scale` | `float` | 缩放因子（默认 1.0） |
 | `glowing` | `boolean` | 是否发光 |
@@ -641,11 +668,13 @@ classDiagram
     class SingleLineScreen {
         单行编辑器（含 XYZ 位置）
         showPositionFields() = true
+        使用方: SingleLineRoadSignBlock
     }
     class SimpleTextScreen {
         简化编辑器（无 XYZ 位置）
         showPositionFields() = false
         +getDefaultPosition() Vec3d
+        使用方: simple_text_sign
     }
 
     Screen <|-- AbstractTextScreen
@@ -668,10 +697,12 @@ classDiagram
 - [ ] `getOffset(BlockState)` 根据 FACING 返回正确的偏移
 - [ ] `createBlockEntity(pos, state)` 返回正确类型的 TextBlockEntity 子类
 - [ ] `getBlockEntityType()` 返回注册的 BlockEntityType
-- [ ] 注册时 BlockEntityType 的 factory 必须与构造函数签名匹配（三元 `(type, pos, state)`）
+- [ ] **注册时 BlockEntityType 的 factory 必须与构造函数签名匹配（三元 `(type, pos, state)`）**
+- [ ] **方块必须列入 `FabricBlockEntityTypeBuilder.create(...)` 的方块参数列表**——否则 `World.addBlockEntity` 校验 `type.supports(state)` 失败，方块实体会被静默丢弃（方块能放置、无文字、GUI 打开为空，且无任何报错日志）
 - [ ] `blocksDefaultInteraction()` 返回 true（阻断原版放置逻辑）
 - [ ] （可选）覆盖 `canOpenGui(player, pos)` 添加权限/距离检查
 - [ ] （可选）覆盖 `onGuiOpened(player, pos)` 添加音效/粒子回调
+- [ ] （可选）覆盖 `createBlockEntity` 播种初始文字行，让 GUI 与渲染器使用方块自定义的默认位置（如 `SingleLineRoadSignBlock` 的 (0.5, 0.6, 0.9)）
 
 ---
 

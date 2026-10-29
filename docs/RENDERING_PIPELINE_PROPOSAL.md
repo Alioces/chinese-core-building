@@ -414,7 +414,19 @@ flowchart LR
 
 **优先级规则**：数值越小越先执行（越靠近内层）。
 
+**包装方向规则（两条管线相反）**：
+
+| 管线 | 链构建 | 包装方向 | 原因 |
+|------|--------|----------|------|
+| BakedModel | `BakedModelDecorator.createChain` | 降序（高优先级先包装外层） | `RenderContext.pushTransform` 后进先出 |
+| BlockEntityRenderer | `BlockEntityDecorator.createChain` | 升序（低优先级先包装内层） | `MatrixStack` 右乘，执行顺序即变换顺序 |
+
+两条管线排序规则相同（按优先级升序排序），但包装方向相反，最终矩阵统一为 `T(offset) * R(angle)`：先旋转，再沿世界方向平移。
+**历史 bug**：BER 管线原用降序包装，导致偏移向量被旋转扭曲（EAST 朝向的 1.5 方块偏移被转到北侧），文字与模型分离；改为升序后修复。
+
 **文字朝向修正**：TextDecorator 内部固定绕 Y 轴旋转 180°，修正 Minecraft 文字默认朝向（-Z 面向方块内部），使文字面向外部玩家（+Z 方向）。
+
+**文字阴影**：`TextRenderer.draw` 的 `shadow` 参数传 `false`，关闭投影。路标文字是贴在板面上的"印刷字"，投影会在浅色板面上形成深色描边，降低可读性且不符合真实路牌观感。发光分支走 `drawWithOutline`，该方法本身无 shadow 参数（绘制描边 + 填充，同时强制满亮度实现自发光）。
 
 ### 7.4 后处理包装器重构
 
@@ -459,7 +471,9 @@ public class OffsetBakedModel extends DecoratorBakedModel<OffsetDecorator> {
 | **分离两个装饰器接口** | Java 泛型限制：一个类不能实现相同接口不同泛型参数，因此创建 `BakedModelDecorator` 和 `BlockEntityDecorator` 两个独立接口 |
 | **TextDecorator 独立创建** | TextDecorator 持有 TextRenderer 引用，由 TextBlockRenderer 构造函数创建，避免 MinecraftClient.getInstance().textRenderer 在初始化阶段返回 null |
 | **BlockEntityRenderer 完整装饰器链** | TextBlockRenderer 通过 `createBlockEntityChain()` 获取 Offset→Rotation→Text 完整链，保证与 BakedModel 管线变换一致 |
+| **两条管线包装方向相反（2026-10 修复）** | BakedModel 侧降序（`pushTransform` 后进先出），BER 侧升序（`MatrixStack` 右乘）。原 BER 侧误用降序导致偏移被旋转扭曲、文字与模型分离 |
 | **文字 180° 翻转** | TextDecorator 内部固定绕 Y 轴旋转 180°，修正 Minecraft 文字默认朝向（-Z），使文字面向外部玩家 |
+| **文字关闭阴影（2026-10）** | `TextRenderer.draw` 的 `shadow` 传 `false`，避免投影在浅色板面上形成深色描边；发光分支走 `drawWithOutline`（本身无 shadow 参数） |
 | **共享装饰器实例** | Offset/Rotation 装饰器在两条管线间共享，保证变换逻辑完全一致 |
 | **BlockEntityDecorator.getPriorityValue() 声明为抽象** | 避免与 BakedModelDecorator 的默认方法继承冲突，由实现类显式委托 |
 | **DecoratorBakedModel 泛型约束** | `D extends BakedModelDecorator<Void>`，确保类型安全 |

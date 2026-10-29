@@ -270,6 +270,10 @@ flowchart LR
 TextDecorator 由 TextBlockRenderer 自行创建（持有 TextRenderer），内部固定绕 Y 轴旋转 180° 使文字面向外部玩家。
 BlockEntityRenderer 管线通过 `createBlockEntityChain()` 获取完整装饰器链。
 
+> **注意两条管线的包装方向相反**：BakedModel 管线用降序包装（`pushTransform` 后进先出），BER 管线用升序包装（`MatrixStack` 右乘）。
+> 两者排序规则相同（优先级升序），但包装方向相反才能得到一致的最终矩阵 `T(offset) * R(angle)`。
+> 若 BER 侧误用降序，偏移向量会被旋转扭曲，导致文字与模型分离（详见 apiWiki.md 第 5 章）。
+
 **静态 vs 动态分流**：
 
 ```java
@@ -283,7 +287,8 @@ BlockEntityRenderer 管线通过 `createBlockEntityChain()` 获取完整装饰�
 |------|-----------|-----------|
 | `RotatableBlock` | `Rotatable` | 16 角度旋转 + 自动 placement |
 | `RotatableSignBlock` | `Rotatable` | 旋转 + 自定义形状 |
-| `RoadSignsBlock` | `Directional, Layered, Offset` | 4 方向 + CUTOUT 渲染 + 空间偏移 |
+| `RoadSignsBlock` | `Directional, Layered, Offset` | 4 方向 + CUTOUT 渲染 + 空间偏移（纯装饰路标，无文字） |
+| `SingleLineRoadSignBlock` | 继承 `RoadSignsBlock` + `GuiInteractive, BlockEntityProvider, SignTextProvider` | 路标 + 单行文字编辑（GUI 含 XYZ 位置框）。当前 `width_limit`、`weight_limit`、`height_limit`、`axle_weight_limit`、`km_h_and_no_entry` 均使用此类 |
 | `WineCabinetBlock` | `Directional, SubModelProvider, StatefulTextureProvider, LightEmissive, AnimatableModel, Layered` | 全能力展示：子模型 + 动态贴图 + 发光 + 动画 |
 | `TestSignBlock` | `Directional, Layered, GuiInteractive, BlockEntityProvider, SignTextProvider` | 文字渲染 + GUI 交互（公共文字功能参考实现） |
 
