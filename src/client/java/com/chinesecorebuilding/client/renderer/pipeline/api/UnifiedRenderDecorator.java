@@ -117,8 +117,7 @@ public interface UnifiedRenderDecorator<T, R> {
         decorators.sort(Comparator.comparingInt(UnifiedRenderDecorator::getPriorityValue));
 
         Function<T, R> current = baseRender;
-        for (int i = decorators.size() - 1; i >= 0; i--) {
-            var decorator = decorators.get(i);
+        for (UnifiedRenderDecorator<T, R> decorator : decorators) {
             final Function<T, R> next = current;
             current = ctx -> decorator.decorate(ctx, next);
         }

@@ -185,10 +185,11 @@ public class TextDecorator implements BakedModelDecorator<Void>, BlockEntityDeco
         context.matrices().push();
         context.matrices().translate(pos.x, pos.y, pos.z);
 
-        // 绕 Y 轴旋转 180°，使文字面向外部玩家（默认朝向 -Z，旋转后朝向 +Z）
+        float scale = SCALE_FACTOR * line.scale();
+
+        // 绕 Y 轴旋转 180°，使文字面向外部玩家（TextRenderer 默认朝向 -Z，旋转后朝向 +Z）
         context.matrices().multiply(new org.joml.Quaternionf().rotateY((float) Math.PI));
 
-        float scale = SCALE_FACTOR * line.scale();
         context.matrices().scale(scale, -scale, scale);
 
         float width = renderer.getWidth(line.text());
