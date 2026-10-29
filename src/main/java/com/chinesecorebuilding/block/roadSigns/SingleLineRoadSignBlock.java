@@ -6,6 +6,7 @@ import com.chinesecorebuilding.block.entity.ChineseCoreBuildingEntities;
 import com.chinesecorebuilding.block.entity.TextBlockEntity;
 import com.chinesecorebuilding.block.properties.GuiInteractive;
 import com.chinesecorebuilding.block.properties.model.SignTextProvider;
+import com.chinesecorebuilding.util.OffsetFunction;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -57,7 +58,7 @@ public class SingleLineRoadSignBlock extends RoadSignsBlock
      * @param settings 方块属性配置
      * @param offset   偏移值提供器
      */
-    public SingleLineRoadSignBlock(Settings settings, com.chinesecorebuilding.util.OffsetFunction offset) {
+    public SingleLineRoadSignBlock(Settings settings, OffsetFunction offset) {
         super(settings, offset);
     }
 

@@ -33,7 +33,7 @@ import net.minecraft.world.BlockView;
  * @see OffsetFunction
  */
 public class RoadSignsBlock extends CustomBlock
-        implements Directional, Layered, Offset {
+        implements Directional, Layered,Offset {
 
     /**
      * 路牌板面从方块中心向外的水平偏移（X/Z 方向，单位：方块）。

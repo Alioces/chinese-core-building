@@ -43,6 +43,19 @@ public interface BlockEntityDecorator<R> {
 
     /**
      * 创建装饰器链。
+     * <p>
+     * <b>包装方向为升序（低优先级 → 高优先级）</b>，使优先级数值大的装饰器处于外层：
+     * {@code Offset(100)} 包 {@code Rotation(0)}，最终矩阵为 {@code T(offset) * R(angle)}，
+     * 偏移向量在旋转<b>之后</b>施加，始终沿世界方向（与 {@link Offset#getOffset} 的语义一致）。
+     * </p>
+     * <p>
+     * <b>为何与 BakedModelDecorator 的方向相反：</b>
+     * BakedModel 管线使用 {@code RenderContext.pushTransform}，Fabric 的实现是"后 push 先应用"，
+     * 因此 BakedModel 侧用降序包装即可得到 {@code Offset(Rotation(v))}；
+     * 而 BER 管线使用 {@code MatrixStack} 右乘，矩阵顺序直接对应顶点变换顺序，
+     * 必须用升序包装才能得到同样的 {@code T(offset) * R(angle)}。
+     * 两条管线虽包装方向不同，最终数学顺序一致，保证文字与模型同步。
+     * </p>
      *
      * @param decorators 装饰器列表
      * @param baseRender 基础渲染函数
@@ -56,8 +69,7 @@ public interface BlockEntityDecorator<R> {
         decorators.sort(Comparator.comparingInt(BlockEntityDecorator::getPriorityValue));
 
         Function<BlockEntityRendererContext<?>, R> current = baseRender;
-        for (int i = decorators.size() - 1; i >= 0; i--) {
-            var decorator = decorators.get(i);
+        for (BlockEntityDecorator<R> decorator : decorators) {
             final Function<BlockEntityRendererContext<?>, R> next = current;
             current = ctx -> decorator.decorate(ctx, next);
         }
