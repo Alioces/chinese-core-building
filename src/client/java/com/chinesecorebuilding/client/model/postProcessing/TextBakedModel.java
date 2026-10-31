@@ -94,4 +94,18 @@ public class TextBakedModel extends ForwardingBakedModel {
     public List<BakedQuad> getQuads(BlockState state, Direction face, Random random) {
         return wrapped.getQuads(state, face, random);
     }
+
+    /**
+     * 标记此模型为非原版适配器。
+     * <p>
+     * 与 {@link DecoratorBakedModel#isVanillaAdapter()} 保持一致的 Sodium 兼容策略：
+     * 返回 {@code false} 强制渲染管线走 FRAPI {@link #emitBlockQuads} 路径。
+     * </p>
+     *
+     * @return false，强制走 FRAPI 渲染路径
+     */
+    @Override
+    public boolean isVanillaAdapter() {
+        return false;
+    }
 }

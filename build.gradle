@@ -60,8 +60,30 @@ dependencies {
 	modCompileOnly("mezz.jei:jei-${project.minecraft_version}-common-api:${project.jei_version}")
 	modCompileOnly("mezz.jei:jei-${project.minecraft_version}-fabric-api:${project.jei_version}")
 	modLocalRuntime("mezz.jei:jei-${project.minecraft_version}-fabric:${project.jei_version}")
+
+	// Sodium — 图形优化模组兼容性测试（运行时依赖，不包含在发布版本中）
+	modLocalRuntime("maven.modrinth:sodium:${project.sodium_version}")
+
+	// Indium — Sodium 0.5.x 的 FRAPI 桥接层
+	// Sodium 0.5.x 不支持 Fabric Rendering API，Indium 补全 FRAPI 实现，
+	// 使 emitBlockQuads / pushTransform / QuadEmitter 等接口可用。
+	// Sodium 0.6+ 已内置 FRAPI，届时可移除此依赖。
+	// 参考：https://github.com/Lolothepro/indium
+	modLocalRuntime("maven.modrinth:indium:${project.indium_version}")
 }
 
+// Sodium 0.5.x 要求 LWJGL 3.3.1，但新版 Fabric Loader 打包了更高版本。
+// 强制所有 LWJGL 库降级到 Sodium 兼容的版本。
+// 参考：https://github.com/CaffeineMC/sodium-fabric/wiki/LWJGL-Compatibility
+configurations.all {
+	resolutionStrategy {
+		eachDependency {
+			if (requested.group == "org.lwjgl" && requested.name != "lwjgl-nfd") {
+				useVersion "3.3.1"
+			}
+		}
+	}
+}
 
 processResources {
 	def version = project.version

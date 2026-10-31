@@ -87,6 +87,28 @@ public abstract class DecoratorBakedModel<D extends BakedModelDecorator<Void>> e
     }
 
     /**
+     * 标记此模型为非原版适配器。
+     * <p>
+     * 告知渲染管线（如 Sodium）此模型的渲染必须通过
+     * {@link #emitBlockQuads} 走 FRAPI 路径，
+     * 因为 {@link #getQuads} 返回的顶点是不完整的——
+     * 缺少旋转、偏移、文字层、子模型等变换结果。
+     * </p>
+     * <p>
+     * <b>Sodium 兼容性</b>：Sodium 通过 {@code isVanillaAdapter()}
+     * 判断是调用 {@code getQuads()} 还是 {@code emitBlockQuads()}。
+     * 返回 {@code false} 强制 Sodium 走 FRAPI 路径，
+     * 确保 {@link #emitBlockQuads} 中的 pushTransform 变换被正确应用。
+     * </p>
+     *
+     * @return false，强制走 FRAPI 渲染路径
+     */
+    @Override
+    public boolean isVanillaAdapter() {
+        return false;
+    }
+
+    /**
      * 原版渲染管线的面片获取方法。
      * <p>
      * 直接代理到原始模型，不做变换处理。
