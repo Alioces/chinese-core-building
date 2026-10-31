@@ -2,6 +2,7 @@ package com.chinesecorebuilding.client.datagen;
 
 import com.chinesecorebuilding.ChineseCoreBuildingMod;
 import com.chinesecorebuilding.block.CustomBlock;
+import com.chinesecorebuilding.block.properties.model.Axial;
 import com.chinesecorebuilding.block.properties.model.Directional;
 import com.chinesecorebuilding.block.properties.model.Rotatable;
 import com.google.gson.Gson;
@@ -122,9 +123,13 @@ public class CustomBlockModelProvider extends FabricModelProvider {
 	 * @param block     CustomBlock 实例
 	 */
 	private void generateCustomBlock(BlockStateModelGenerator generator, Block block) {
-		// 根据方块类型生成 blockstate
+		// 根据方块类型生成 blockstate（检查顺序：Directional > Axial > Rotatable）
+		// Directional（4 方向）和 Axial（2 轴向）都是 Rotatable 的子接口，
+		// 必须先检查特化类型再检查基接口 Rotatable
 		if (block instanceof Directional) {
 			generateDirectionalBlockstate(generator, block);
+		} else if (block instanceof Axial) {
+			generateAxialBlockstate(generator, block);
 		} else if (block instanceof Rotatable) {
 			generateRotatableBlockstate(generator, block);
 		} else {
@@ -160,6 +165,26 @@ public class CustomBlockModelProvider extends FabricModelProvider {
 				.with(When.create().set(Directional.FACING, Direction.SOUTH),
 					BlockStateVariant.create().put(VariantSettings.MODEL, modelId))
 				.with(When.create().set(Directional.FACING, Direction.WEST),
+					BlockStateVariant.create().put(VariantSettings.MODEL, modelId))
+		);
+	}
+
+	/**
+	 * 为 {@link Axial} 方块生成 blockstate。
+	 * <p>
+	 * 使用 multipart 格式，为 2 个水平轴向（X / Z）各创建一个条件映射，
+	 * 所有轴向均指向同一个方块模型。
+	 * 适用于正面和反面外观完全相同的方块，无需区分 north/south 或 east/west。
+	 * </p>
+	 */
+	private void generateAxialBlockstate(BlockStateModelGenerator generator, Block block) {
+		Identifier modelId = createBlockModelId(block);
+
+		generator.blockStateCollector.accept(
+			MultipartBlockStateSupplier.create(block)
+				.with(When.create().set(Axial.AXIS, Direction.Axis.X),
+					BlockStateVariant.create().put(VariantSettings.MODEL, modelId))
+				.with(When.create().set(Axial.AXIS, Direction.Axis.Z),
 					BlockStateVariant.create().put(VariantSettings.MODEL, modelId))
 		);
 	}
