@@ -289,7 +289,7 @@ BlockEntityRenderer 管线通过 `createBlockEntityChain()` 获取完整装饰�
 | `RotatableSignBlock` | `Rotatable` | 旋转 + 自定义形状 |
 | `RoadSignsBlock` | `Directional, Layered, Offset` | 4 方向 + CUTOUT 渲染 + 空间偏移（纯装饰路标，无文字） |
 | `SingleLineRoadSignBlock` | 继承 `RoadSignsBlock` + `GuiInteractive, BlockEntityProvider, SignTextProvider` | 路标 + 单行文字编辑（GUI 含 XYZ 位置框）。当前 `width_limit`、`weight_limit`、`height_limit`、`axle_weight_limit`、`km_h_and_no_entry` 均使用此类 |
-| `WineCabinetBlock` | `Directional, SubModelProvider, StatefulTextureProvider, LightEmissive, AnimatableModel, Layered` | 全能力展示：子模型 + 动态贴图 + 发光 + 动画 |
+| `WineCabinetBlock` | `Directional, SubModelProvider, StatefulTextureProvider, LightEmissive, AnimatableModel, Layered` | 全能力展示：动态贴图 + 发光 + 动画。子模型部分已废弃 ⚠️ |
 | `TestSignBlock` | `Directional, Layered, GuiInteractive, BlockEntityProvider, SignTextProvider` | 文字渲染 + GUI 交互（公共文字功能参考实现） |
 
 ---
@@ -365,7 +365,7 @@ pipeline/
 
 **后处理包装器重构**：`OffsetBakedModel` 和 `RotationBakedModel` 继承 `DecoratorBakedModel<D>` 基类，消除约 60 行重复代码。
 
-**子模型渲染重构**：`SubModelDecorator` 和 `SubModelBakedModel` 共享 `SubModelRendererBase` 基类，消除约 150 行重复代码。
+**子模型渲染重构（⚠️ 已废弃）**：`SubModelDecorator` 和 `SubModelBakedModel` 共享 `SubModelRendererBase` 基类，消除约 150 行重复代码。子模型功能在 Sodium + Indium 环境下存在面剔除异常，已于 2026-11-08 标记为 `@Deprecated`，仅保留供 vanilla 环境测试。
 
 详见 [RENDERING_PIPELINE_PROPOSAL.md §7](./RENDERING_PIPELINE_PROPOSAL.md#7-装饰器模式重构)。
 
@@ -387,7 +387,7 @@ flowchart TD
 | AnchorPoint + Transform | ✅ | Vec3d position/rotation + float scale |
 | BakeContext + BakedModelSpec | ✅ | spec 含 5 个 deferred* 字段 |
 | ModelBakePluginRegistry + 5 Plugin | ✅ | 优先级链完整，静态/动态分流逻辑已实现 |
-| SubModelBakedModel | ✅ | 消费 deferredSubModelHandler |
+| SubModelBakedModel | ⚠️ | 已标记 @Deprecated，Sodium/Indium 下存在面剔除异常 |
 | RotationBakedModel + OffsetBakedModel | ✅ | getRotationAngle / getOffset |
 | TextBakedModel | ✅ | SignTextProvider |
 | DynamicModelDecorator 标记 | ✅ | ModelPluginRegistry 根据此标记分流 |
@@ -404,6 +404,7 @@ flowchart TD
 | 缺少 DynamicTextureBakedModel | 状态驱动的贴图切换不可用（如 LIT=true → stone→stone_bricks） | 🔴 P0 |
 | 缺少 EmissiveBakedModel | 状态驱动的发光等级不可用（如 LIT=true → emissive 15） | 🔴 P0 |
 | 缺少 MultiBlock BakedModel | 多方块模型合并不可见 | 🟡 P2 |
+| 子模型 Sodium/Indium 兼容 | SubModelBakedModel/SubModelDecorator 在 Sodium+Indium 下存在面剔除异常，已标记 @Deprecated | 🔴 P0 |
 
 ### 5.7 技术方案与实现的已知差异
 

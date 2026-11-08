@@ -26,7 +26,12 @@ import java.util.function.Function;
  * 统一处理 BakedModel 管线的子模型渲染。
  * 继承 {@link SubModelRendererBase} 复用公共逻辑，专注装饰器职责。
  * </p>
+ *
+ * @deprecated 子模型功能在 Sodium + Indium 环境下存在面剔除异常。
+ * 参见 {@link com.chinesecorebuilding.client.model.postProcessing.SubModelBakedModel} 的废弃说明。
+ * 当前类保留仅用于无 Sodium/Indium 的 vanilla 环境测试。
  */
+@Deprecated
 public class SubModelDecorator extends SubModelRendererBase implements BakedModelDecorator<Void> {
 
     /**

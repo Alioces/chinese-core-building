@@ -37,7 +37,15 @@ import java.util.function.Supplier;
  * 采用"延迟初始化 + 线程安全缓存"策略：
  * 构造函数仅存储 Identifier，首次渲染时加载并缓存 BakedModel。
  * </p>
+ *
+ * @deprecated 子模型功能在 Sodium + Indium 环境下存在面剔除异常，
+ * 特定朝向下子模型面片消失、站在方块顶部时只渲染一个面。
+ * 根本原因涉及 pushTransform 嵌套层数限制、cullFace 方向与变换后几何失配、
+ * 以及 vanilla BakedQuad 与 Indium 顶点法线编码不兼容等多重问题，
+ * 目前采用手动顶点变换作为临时方案，待完整重新设计后修复。
+ * 当前类保留仅用于无 Sodium/Indium 的 vanilla 环境测试。
  */
+@Deprecated
 public class SubModelBakedModel extends ForwardingBakedModel {
 
     /**
@@ -106,27 +114,17 @@ public class SubModelBakedModel extends ForwardingBakedModel {
                                Supplier<Random> randomSupplier, RenderContext context) {
         rendererHelper.initializeIfNeeded();
 
-        // 诊断日志：记录渲染入口信息
-        LOGGER.info("[emitBlockQuads] pos={}, state={}, wrapped.class={}, deferredHandler={}, loadedModels={}",
-                pos, state,
-                wrapped != null ? wrapped.getClass().getSimpleName() : "null",
-                rendererHelper.hasDeferredHandler(),
-                rendererHelper.getModelCacheSize());
-
         // 通过 QuadEmitter 逐面片发射父模型，确保穿过变换栈（pushTransform）
         QuadEmitter emitter = context.getEmitter();
         Random random = randomSupplier.get();
         RenderMaterial material = RendererAccess.INSTANCE.getRenderer()
                 .materialById(RenderMaterial.MATERIAL_STANDARD);
-        int quadCount = 0;
         for (int nullSide = 0; nullSide <= 6; nullSide++) {
             Direction side = nullSide == 0 ? null : Direction.byId(nullSide - 1);
             for (BakedQuad quad : wrapped.getQuads(state, side, random)) {
                 emitter.fromVanilla(quad, material, side).emit();
-                quadCount++;
             }
         }
-        LOGGER.info("[emitBlockQuads] emitted {} parent quads via QuadEmitter", quadCount);
 
         // 解析当前状态对应的子模型列表并渲染
         List<BakedModelSpec.SubModelEntry> entries = rendererHelper.resolveSubModelEntries(state);
@@ -134,13 +132,13 @@ public class SubModelBakedModel extends ForwardingBakedModel {
         for (BakedModelSpec.SubModelEntry entry : entries) {
             BakedModel cachedModel = rendererHelper.getCachedModel(entry.modelId());
             if (cachedModel != null) {
-                emitSubModelQuads(cachedModel, entry.transform(), context);
+                emitSubModelQuads(cachedModel, entry.transform(), context, blockView, state, pos);
             } else {
                 // 延迟加载：尝试加载子模型并缓存
                 BakedModel loaded = rendererHelper.loadModelWithFallback(entry.modelId());
                 if (loaded != null) {
                     rendererHelper.cacheModel(entry.modelId(), loaded);
-                    emitSubModelQuads(loaded, entry.transform(), context);
+                    emitSubModelQuads(loaded, entry.transform(), context, blockView, state, pos);
                 } else {
                     LOGGER.warn("[emitBlockQuads] subModel not found: {}", entry.modelId());
                 }
@@ -150,12 +148,20 @@ public class SubModelBakedModel extends ForwardingBakedModel {
 
     /**
      * 应用变换后发射子模型面片。
+     * <p>
+     * 透传父模型的 {@link BlockRenderView}、{@link BlockState}、{@link BlockPos} 给子模型，
+     * 确保 Sodium/Indium 能正确计算 AO 和光照。
+     * </p>
      *
      * @param subModel  子模型
      * @param transform 变换参数
      * @param context   渲染上下文
+     * @param blockView 方块渲染视图
+     * @param state     方块状态
+     * @param pos       方块位置
      */
-    private void emitSubModelQuads(BakedModel subModel, Transform transform, RenderContext context) {
+    private void emitSubModelQuads(BakedModel subModel, Transform transform, RenderContext context,
+                                   BlockRenderView blockView, BlockState state, BlockPos pos) {
         Vec3d position = transform.position();
         Vec3d rotation = transform.rotation();
         float scale = transform.scale();
@@ -168,81 +174,80 @@ public class SubModelBakedModel extends ForwardingBakedModel {
         float cosZ = (float) Math.cos(rotation.z);
         float sinZ = (float) Math.sin(rotation.z);
 
-        context.pushTransform(quad -> {
-            for (int i = 0; i < 4; i++) {
-                float x = quad.x(i);
-                float y = quad.y(i);
-                float z = quad.z(i);
+        QuadEmitter emitter = context.getEmitter();
+        RenderMaterial material = RendererAccess.INSTANCE.getRenderer()
+                .materialById(RenderMaterial.MATERIAL_STANDARD);
+        Random random = Random.create(42L);
 
-                // 1. 缩放
-                x *= scale;
-                y *= scale;
-                z *= scale;
+        for (int nullSide = 0; nullSide <= 6; nullSide++) {
+            Direction side = nullSide == 0 ? null : Direction.byId(nullSide - 1);
+            for (BakedQuad quad : subModel.getQuads(state, side, random)) {
+                // 从 vanilla BakedQuad 复制面片数据到 emitter
+                emitter.fromVanilla(quad, material, side);
 
-                // 2. Y 轴旋转
-                float tempX = x * cosY - z * sinY;
-                float tempZ = x * sinY + z * cosY;
-                x = tempX;
-                z = tempZ;
+                // 手动应用位置、旋转、缩放变换到顶点（替代 pushTransform，避免嵌套变换兼容性问题）
+                for (int i = 0; i < 4; i++) {
+                    float x = emitter.x(i);
+                    float y = emitter.y(i);
+                    float z = emitter.z(i);
 
-                // 3. X 轴旋转
-                float tempY = y * cosX - z * sinX;
-                z = y * sinX + z * cosX;
-                y = tempY;
+                    // 1. 缩放
+                    x *= scale;
+                    y *= scale;
+                    z *= scale;
 
-                // 4. Z 轴旋转
-                tempX = x * cosZ - y * sinZ;
-                y = x * sinZ + y * cosZ;
-                x = tempX;
+                    // 2. Y 轴旋转
+                    float tempX = x * cosY - z * sinY;
+                    float tempZ = x * sinY + z * cosY;
+                    x = tempX;
+                    z = tempZ;
 
-                // 5. 位置偏移
-                x += position.x;
-                y += position.y;
-                z += position.z;
+                    // 3. X 轴旋转
+                    float tempY = y * cosX - z * sinX;
+                    z = y * sinX + z * cosX;
+                    y = tempY;
 
-                quad.pos(i, x, y, z);
+                    // 4. Z 轴旋转
+                    tempX = x * cosZ - y * sinZ;
+                    y = x * sinZ + y * cosZ;
+                    x = tempX;
+
+                    // 5. 位置偏移
+                    x += (float) position.x;
+                    y += (float) position.y;
+                    z += (float) position.z;
+
+                    emitter.pos(i, x, y, z);
+                }
+
+                // 手动变换法线方向（与顶点使用相同的旋转，法线不缩放）
+                for (int i = 0; i < 4; i++) {
+                    float nx = emitter.normalX(i);
+                    float ny = emitter.normalY(i);
+                    float nz = emitter.normalZ(i);
+
+                    // Y 轴旋转
+                    float tempNx = nx * cosY - nz * sinY;
+                    float tempNz = nx * sinY + nz * cosY;
+                    nx = tempNx;
+                    nz = tempNz;
+
+                    // X 轴旋转
+                    float tempNy = ny * cosX - nz * sinX;
+                    nz = ny * sinX + nz * cosX;
+                    ny = tempNy;
+
+                    // Z 轴旋转
+                    tempNx = nx * cosZ - ny * sinZ;
+                    ny = nx * sinZ + ny * cosZ;
+                    nx = tempNx;
+
+                    emitter.normal(i, nx, ny, nz);
+                }
+
+                emitter.emit();
             }
-
-            // 同步变换法线方向（与顶点使用相同的旋转）
-            for (int i = 0; i < 4; i++) {
-                float nx = quad.normalX(i);
-                float ny = quad.normalY(i);
-                float nz = quad.normalZ(i);
-
-                // Y 轴旋转
-                float tempNx = nx * cosY - nz * sinY;
-                float tempNz = nx * sinY + nz * cosY;
-                nx = tempNx;
-                nz = tempNz;
-
-                // X 轴旋转
-                float tempNy = ny * cosX - nz * sinX;
-                nz = ny * sinX + nz * cosX;
-                ny = tempNy;
-
-                // Z 轴旋转
-                tempNx = nx * cosZ - ny * sinZ;
-                ny = nx * sinZ + ny * cosZ;
-                nx = tempNx;
-
-                quad.normal(i, nx, ny, nz);
-            }
-
-            // 清除剔除面信息，防止子模型面被相邻方块错误剔除
-            quad.cullFace(null);
-
-            return true;
-        });
-
-        subModel.emitBlockQuads(
-            null,
-            null,
-            null,
-            () -> Random.create(42L),
-            context
-        );
-
-        context.popTransform();
+        }
     }
 
     /**

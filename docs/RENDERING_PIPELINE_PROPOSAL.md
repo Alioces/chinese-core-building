@@ -159,7 +159,7 @@ flowchart TD
 | ModelBakePlugin 接口 | `client/model/ModelBakePlugin.java` | ✅ |
 | ModelBakePluginRegistry（5 插件链） | `client/model/ModelBakePluginRegistry.java` | ✅ |
 | 5 个 Plugin 实现 | `client/model/plugin/*.java` | ✅ |
-| SubModelBakedModel | `client/model/postProcessing/SubModelBakedModel.java` | ✅ |
+| SubModelBakedModel | `client/model/postProcessing/SubModelBakedModel.java` | ⚠️ **[已废弃]** Sodium/Indium 环境下存在面剔除异常，仅 vanilla 环境可用 |
 | RotationBakedModel | `client/model/postProcessing/RotationBakedModel.java` | ✅ |
 | OffsetBakedModel | `client/model/postProcessing/OffsetBakedModel.java` | ✅ |
 | TextBakedModel | `client/model/postProcessing/TextBakedModel.java` | ✅ |
@@ -180,8 +180,8 @@ flowchart TD
 | RotationDecorator | `pipeline/decorator/RotationDecorator.java` | ✅ |
 | TextDecorator | `pipeline/decorator/TextDecorator.java` | ✅ |
 | TextBlockRenderer 装饰器链 | `client/renderer/TextBlockRenderer.java` | ✅ |
-| SubModelDecorator | `pipeline/decorator/SubModelDecorator.java` | ✅ |
-| SubModelRendererBase 基类 | `pipeline/decorator/SubModelRendererBase.java` | ✅ |
+| SubModelDecorator | `pipeline/decorator/SubModelDecorator.java` | ⚠️ **[已废弃]** 同上，Sodium/Indium 环境下不可用 |
+| SubModelRendererBase 基类 | `pipeline/decorator/SubModelRendererBase.java` | ⚠️ **[已废弃]** 同上 |
 | UnifiedRenderPipelineRegistry | `pipeline/UnifiedRenderPipelineRegistry.java` | ✅ |
 
 ### 3.2 待完成项 🚧
@@ -191,6 +191,7 @@ flowchart TD
 | **DynamicTextureBakedModel** | 尚无 BakedModel 消费 `deferredTextureOverrideHandler` | 动态贴图无法按 BlockState 切换 |
 | **EmissiveBakedModel** | 尚无 BakedModel 消费 `deferredEmissiveHandler` | 动态发光无法按 BlockState 计算 |
 | **MultiBlock BakedModel** | 接口+Plugin 已有，缺渲染时合并模型的 BakedModel | 多方块组合不可见 |
+| **子模型 Sodium/Indium 兼容** | SubModelBakedModel/SubModelDecorator 在 Sodium+Indium 下存在面剔除异常 | 子模型功能仅 vanilla 环境可用，代码已标记 @Deprecated |
 
 **三个缺失项的共性问题**：handler 已存入 BakedModelSpec，但 `SubModelBakedModel.getQuads()` 只消费了 `deferredSubModelHandler`，Texture/Emissive handler 暂存但未被读取。
 
@@ -345,6 +346,7 @@ public class TestLightBulbBlock extends CustomBlock
 | bake 阶段只用 defaultState | ⚠️ 中 | 静态路径方块的所有 BlockState 实例共享同一个 BakedModelSpec（贴图/子模型完全一致）。若某方块需要按状态切换贴图，必须实现 `DynamicModelDecorator` |
 | SubModelBakedModel 未消费 Texture/Emissive handler | 🔴 高 | handler 已正确存入 spec，但渲染时未读取——动态贴图和发光功能实际上不可用 |
 | AnchorPoint 缺少预定义常量 | 🟡 低 | 每个测试方块手动 new 锚点，不符合"开箱即用"目标 |
+| 子模型 Sodium/Indium 兼容 | 🔴 高 | SubModelBakedModel/SubModelDecorator 在 Sodium+Indium 环境下存在面剔除异常（特定朝向下子模型消失、站在方块顶部仅渲染单面）。根因涉及 transform 后 cullFace 方向失配、vanilla BakedQuad 与 Indium 顶点法线编码不兼容等。已标记为 @Deprecated，仅保留供 vanilla 环境测试，待完整重新设计后修复 |
 
 ### 6.2 技术债务
 
@@ -451,7 +453,11 @@ public class OffsetBakedModel extends DecoratorBakedModel<OffsetDecorator> {
 }
 ```
 
-### 7.5 子模型渲染重构
+### 7.5 子模型渲染重构 ⚠️ 已废弃
+
+> **⚠️ 2026-11 废弃通知**：子模型功能在 Sodium + Indium 环境下存在面剔除异常，
+> 已于 2026-11-08 标记为 `@Deprecated`。以下内容保留作为历史参考，
+> 当前仅适用于无 Sodium/Indium 的 vanilla 环境。
 
 `SubModelDecorator` 和 `SubModelBakedModel` 共享 `SubModelRendererBase` 基类，消除约 150 行重复代码：
 

@@ -47,9 +47,6 @@ public class OffsetDecorator implements BakedModelDecorator<Void>, BlockEntityDe
             for (int i = 0; i < 4; i++) {
                 quad.pos(i, quad.x(i) + dx, quad.y(i) + dy, quad.z(i) + dz);
             }
-            // 偏移后面片位置改变，原始 cullFace 方向在渲染管线（Sodium/Indium）中
-            // 会导致错误的相邻面剔除判定。清除后交由深度测试处理遮挡。
-            quad.cullFace(null);
             return true;
         });
 

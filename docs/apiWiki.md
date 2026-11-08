@@ -524,11 +524,16 @@ flowchart TD
 |------|--------|------|----------|
 | **模型烘焙（装饰）** | TextBakedModel | 资源加载 | 读取 BlockEntity 数据 → 追加文字层顶点 |
 | **模型烘焙（变换）** | RotationBakedModel / OffsetBakedModel | 资源加载 | 读取 BlockState 属性 → 变换所有顶点 |
-| **装饰器管线** | UnifiedRenderPipelineRegistry | 每帧渲染 | 装饰器链统一处理旋转/偏移/文字/子模型 |
+| **装饰器管线** | UnifiedRenderPipelineRegistry | 每帧渲染 | 装饰器链统一处理旋转/偏移/文字/子模型（子模型已废弃，见下注） |
 | **BlockEntity 渲染** | TextBlockRenderer | 每帧渲染 | 使用完整装饰器链：Offset→Rotation→Text |
 | **渲染层绑定** | BlockRenderLayerMap | 初始化一次 | Layered.getRenderLayerType() → RenderLayer 映射 |
 
 > **关键一致性保证**：TextBlockRenderer 通过 `UnifiedRenderPipelineRegistry.createBlockEntityChain()` 获取完整装饰器链（Offset→Rotation→Text），与 BakedModel 管线使用相同的变换逻辑，保证方块模型和文字层严格对齐。
+
+> **⚠️ 子模型功能已废弃（2026-11-08）**：SubModelBakedModel、SubModelDecorator 及其基类
+> SubModelRendererBase 已标记 `@Deprecated`。在 Sodium + Indium 环境下存在面剔除异常
+> （特定朝向下子模型面片消失、站在方块顶部时仅渲染单面），仅 vanilla 环境可用。
+> 详见 [RENDERING_PIPELINE_PROPOSAL.md §7.5](./RENDERING_PIPELINE_PROPOSAL.md#75-子模型渲染重构)。
 
 #### 两条管线的包装方向差异（重要）
 
